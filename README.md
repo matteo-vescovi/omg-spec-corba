@@ -137,6 +137,7 @@ To convert the graphic diagrams in the CORBA 3.4 spec to SVG, the following step
 - editing the MarkDown sources to refer to the newly created SVG file rather than the previous PNG/JPG file
 
 
+Following text is from the https://github.com/ObjectManagementGroup/mdsa-omg-spec repo README.md:
 
 ## tl;dr
  -- _*DO NOT CLONE THIS REPOSITORY*_ --
