@@ -1,0 +1,2867 @@
+\section{5 The Object Model}\label{the-object-model}
+
+\subsection{5.1 Overview}\label{overview}
+
+This clause describes the concrete object model that underlies the CORBA
+architecture. The model is derived from the abstract Core Object Model
+defined by the Object Management Group in the \emph{Object Management
+Architecture Guide}.
+
+The object model provides an organized presentation of object concepts
+and terminology. It defines a partial model for computation that
+embodies the key characteristics of objects as realized by the submitted
+technologies. The OMG object model is \emph{abstract} in that it is not
+directly realized by any particular technology. The model described here
+is a \emph{concrete} object model. A concrete object model may differ
+from the abstract object model in several ways:
+
+\begin{itemize}
+
+\item
+  It may \emph{elaborate} the abstract object model by making it more
+  specific, for example, by defining the form of request parameters or
+  the language used to specify types.
+\item
+  It may \emph{populate} the model by introducing specific instances of
+  entities defined by the model, for example, specific objects, specific
+  operations, or specific types.
+\item
+  It may \emph{restrict} the model by eliminating entities or placing
+  additional restrictions on their use.
+\end{itemize}
+
+An object system is a collection of objects that isolates the requestors
+of services (clients) from the providers of services by a well-defined
+encapsulating interface. In particular, clients are isolated from the
+implementations of services as data representations and executable code.
+
+The object model first describes concepts that are meaningful to
+clients, including such concepts as object creation and identity,
+requests and operations, types and signatures. It then describes
+concepts related to object implementations, including such concepts as
+methods, execution engines, and activation.
+
+The object model is most specific and prescriptive in defining concepts
+meaningful to clients. The discussion of object implementation is more
+suggestive, with the intent of allowing maximal freedom for different
+object technologies to provide different ways of implementing objects.
+
+There are some other characteristics of object systems that are outside
+the scope of the object model. Some of these concepts are aspects of
+application architecture, some are associated with specific domains to
+which object technology is applied. Such concepts are more properly
+dealt with in an architectural reference model. Examples of excluded
+concepts are compound objects, links, copying of objects, change
+management, and transactions. Also outside the scope of the object model
+are the details of control structure: the object model does not say
+whether clients and/or servers are singlethreaded or multi-threaded, and
+does not specify how event loops are programmed nor how threads are
+created, destroyed, or synchronized.
+
+This object model is an example of a \emph{classical object model},
+where a client sends a message to an object. Conceptually, the object
+interprets the message to decide what service to perform. In the
+classical model, a message identifies an object and zero or more actual
+parameters. As in most classical object models, a distinguished first
+parameter is required, which identifies the operation to be performed;
+the interpretation of the message by the object involves selecting a
+method based on the specified operation. Operationally, of course,
+method selection could be performed either by the object or the ORB.
+
+\subsection{5.2 Object Semantics}\label{object-semantics}
+
+An object system provides services to clients. A \emph{client} of a
+service is any entity capable of requesting the service. This sub clause
+defines the concepts associated with object semantics, that is, the
+concepts relevant to clients.
+
+\subsubsection{5.2.1 Objects}\label{objects}
+
+An object system includes entities known as objects. An \emph{object} is
+an identifiable, encapsulated entity that provides one or more services
+that can be requested by a client.
+
+\subsubsection{5.2.2 Requests}\label{requests}
+
+Clients request services by issuing requests.
+
+The term \emph{request} is broadly used to refer to the entire sequence
+of causally related events that transpires between a client initiating
+it and the last event causally associated with that initiation. For
+example:
+
+\begin{itemize}
+
+\item
+  the client receives the final response associated with that
+  \emph{request} from the server,
+\item
+  the server carries out the associated operation in case of a oneway
+  request, or
+\item
+  the sequence of events associated with the \emph{request} terminates
+  in a failure of some sort. The initiation of a Request is an event.
+\end{itemize}
+
+The information associated with a request consists of an operation, a
+target object, zero or more (actual) parameters, and an optional request
+context.
+
+A \emph{request form} is a description or pattern that can be evaluated
+or performed multiple times to cause the issuing of requests. As
+described in the \hyperref[7-idl-syntax-and-semantics]{IDL Syntax and
+Semantics clause}, request forms are defined by particular language
+bindings. An alternative request form consists of calls to the dynamic
+invocation interface to create an invocation structure, add arguments to
+the invocation structure, and to issue the invocation (refer to the
+\emph{Dynamic Invocation Interface} clause for descriptions of these
+request forms).
+
+A \emph{value} is anything that may be a legitimate (actual) parameter
+in a request. More particularly, a value is an instance of an IDL data
+type. There are non-object values, as well as values that reference
+objects.
+
+An \emph{object} \emph{reference} is a value that reliably denotes a
+particular object. Specifically, an object reference will identify the
+same object each time the reference is used in a request (subject to
+certain pragmatic limits of space and time). An object may be denoted by
+multiple, distinct object references.
+
+A request may have parameters that are used to pass data to the target
+object; it may also have a request context that provides additional
+information about the request. A request context is a mapping from
+strings to strings.
+
+A request causes a service to be performed on behalf of the client. One
+possible outcome of performing a service is returning to the client the
+results, if any, defined for the request.
+
+If an abnormal condition occurs during the performance of a request, an
+exception is returned. The exception may carry additional return
+parameters particular to that exception.
+
+The request parameters are identified by position. A parameter may be an
+input parameter, an output parameter, or an input-output parameter. A
+request may also return a single \emph{return result value}, as well as
+the results stored into the output and input-output parameters.
+
+The following semantics hold for all requests:
+
+\begin{itemize}
+
+\item
+  Any aliasing of parameter values is neither guaranteed removed nor
+  guaranteed to be preserved.
+\item
+  The order in which aliased output parameters are written is not
+  guaranteed.
+\item
+  The return result and the values stored into the output and
+  input-output parameters are undefined if an exception is returned.
+\end{itemize}
+
+For descriptions of the values and exceptions that are permitted, see
+\hyperref[524-types]{Types} and \hyperref[812-exceptions]{Exceptions}.
+
+\subsubsection{5.2.3 Object Creation and
+Destruction}\label{object-creation-and-destruction}
+
+Objects can be created and destroyed. From a client's point of view,
+there is no special mechanism for creating or destroying an object.
+Objects are created and destroyed as an outcome of issuing requests. The
+outcome of object creation is revealed to the client in the form of an
+object reference that denotes the new object.
+
+\subsubsection{5.2.4 Types}\label{types}
+
+A \emph{type} is an identifiable entity with an associated predicate (a
+single-argument mathematical function with a boolean result) defined
+over entities. An entity \emph{satisfies} a type if the predicate is
+true for that entity. An entity that satisfies a type is called a
+\emph{member of the type}.
+
+Types are used in signatures to restrict a possible parameter or to
+characterize a possible result.
+
+The \emph{extension of a type} is the set of entities that satisfy the
+type at any particular time.
+
+An \emph{object type} is a type whose members are object references. In
+other words, an object type is satisfied only by object references.
+
+Constraints on the data types in this model are shown in this sub
+clause.
+
+\textbf{5.2.4.1 Basic types}
+
+\begin{itemize}
+\item
+  16-bit, 32-bit, and 64-bit signed and unsigned 2's complement
+  integers.
+\item
+  Single-precision (32-bit), double-precision (64-bit), and
+  double-extended (a mantissa of at least 64 bits, a sign bit and an
+  exponent of at least 15 bits) IEEE floating point numbers.
+\item
+  Fixed-point decimal numbers of up to 31 significant digits.
+\item
+  Characters, as defined in ISO Latin-1 (8859.1) and other single- or
+  multi-byte character sets.
+\item
+  A boolean type taking the values TRUE and FALSE.
+\item
+  An 8-bit opaque detectable, guaranteed to \emph{not} undergo any
+  conversion during transfer between systems.
+\item
+  Enumerated types consisting of ordered sequences of identifiers.
+\item
+  A string type, which consists of a variable-length array of
+  characters; the length of the string is a non-negative integer, and is
+  available at run-time. The length may have a maximum bound defined.
+\item
+  A wide character string type, which consists of a variable-length
+  array of (fixed width) wide characters; the length of the wide string
+  is a non-negative integer, and is available at run-time. The length
+  may have a maximum bound defined.
+\item
+  A container type ``any,'' which can represent any possible basic or
+  constructed type.
+\item
+  Wide characters that may represent characters from any wide character
+  set.
+\item
+  Wide character strings, which consist of a length, available at
+  runtime, and a variable-length array of (fixed width) wide characters.
+
+  \textbf{5.2.4.2 Constructed types}
+\item
+  A record type (called struct), which consists of an ordered set of
+  (name,value) pairs.
+\item
+  A discriminated union type, which consists of a discriminator (whose
+  exact value is always available) followed by an instance of a type
+  appropriate to the discriminator value.
+\item
+  A sequence type, which consists of a variable-length array of a single
+  type; the length of the sequence is available at run-time.
+\item
+  An array type, which consists of a fixed-shape multidimensional array
+  of a single type.
+\item
+  An interface type, which specifies the set of operations that an
+  instance of that type must support.
+\item
+  A value type, which specifies state as well as a set of operations
+  that an instance of that type must support.
+\end{itemize}
+
+Entities in a request are restricted to values that satisfy these type
+constraints. The legal entities are shown in Figure 5.1. No particular
+representation for entities is defined.
+
+{\includesvg[keepaspectratio]{images/figure5-1.svg}}
+
+\textbf{Figure 5.1 - Legal Values}
+
+\subsubsection{5.2.5 Interfaces}\label{interfaces}
+
+An \emph{interface} is a description of a set of possible operations
+that a client may request of an object, through that interface. It
+provides a syntactic description of how a service provided by an object
+supporting this interface, is accessed via this set of operations. An
+object \emph{satisfies} an interface if it provides its service through
+the operations of the interface according to the specification of the
+operations (see \hyperref[528-operations]{Operations}).
+
+The \emph{interface type} for a given interface is an object type, such
+that an object reference will satisfy the type, if and only if the
+referent object also satisfies the interface.
+
+Interfaces are specified in IDL. Interface inheritance provides the
+composition mechanism for permitting an object to support multiple
+interfaces. The \emph{principal interface} is simply the most-specific
+interface that the object supports, and consists of all operations in
+the transitive closure of the interface inheritance graph.
+
+Interfaces satisfy the Liskov substitution principle. If interface A is
+derived from interface B, then a reference to an object that supports
+interface A can be used where the formal type of a parameter is declared
+to be B.
+
+\subsubsection{5.2.6 Value Types}\label{value-types}
+
+A \emph{value type} is an entity, which shares many of the
+characteristics of interfaces and structs. It is a description of both a
+set of operations that a client may request and of state that is
+accessible to a client. Instances of a value type are always local
+concrete implementations in some programming language.
+
+A value type, in addition to the operations and state defined for
+itself, may also inherit from other value types, and through multiple
+inheritance support other interfaces.
+
+Value types are specified in IDL.
+
+An \emph{abstract value type} describes a value type that is a ``pure''
+bundle of operations with no state.
+
+\subsubsection{5.2.7 Abstract Interfaces}\label{abstract-interfaces}
+
+An \emph{abstract interface} is an entity, which may at runtime
+represent either a regular interface (see
+\hyperref[525-interfaces]{Interfaces}) or a value type (see
+\hyperref[526-value-types]{Value Types}). Like an abstract value type,
+it is a pure bundle of operations with no state. Unlike an abstract
+value type, it does not imply pass-by-value semantics, and unlike a
+regular interface type, it does not imply pass-by-reference semantics.
+Instead, the entity's runtime type determines which of these semantics
+are used.
+
+\subsubsection{5.2.8 Operations}\label{operations}
+
+An \emph{operation} is an identifiable entity that denotes the
+indivisible primitive of service provision that can be requested. The
+act of requesting an operation is referred to as \emph{invoking the
+operation}. An operation is identified by an \emph{operation
+identifier}.
+
+An operation has a \emph{signature} that describes the legitimate values
+of request parameters and returned results. In particular, a
+\emph{signature} consists of:
+
+\begin{itemize}
+
+\item
+  A specification of the parameters required in requests for that
+  operation.
+\item
+  A specification of the result of the operation.
+\item
+  An identification of the user exceptions that may be raised by an
+  invocation of the operation.
+\item
+  A specification of additional contextual information that may affect
+  the invocation.
+\item
+  An indication of the execution semantics the client should expect from
+  an invocation of the operation.
+\end{itemize}
+
+Operations are (potentially) \emph{generic}, meaning that a single
+operation can be uniformly invoked on objects with different
+implementations, possibly resulting in observably different behavior.
+Genericity is achieved in this model via interface inheritance in IDL
+and the total decoupling of implementation from interface specification.
+
+The general form for an operation signature is:
+
+\begin{lstlisting}
+[oneway] <op_type_spec> <identifier> (param1, ..., paramL)
+ [raises(except1,...,exceptN)] [context(name1, ..., nameM)]
+\end{lstlisting}
+
+where:
+
+\begin{itemize}
+
+\item
+  The optional \textbf{oneway} keyword indicates that best-effort
+  semantics are expected of requests for this operation; the default
+  semantics are exactly-once if the operation successfully returns
+  results or at-most-once if an exception is returned.
+\item
+  The \passthrough{\lstinline!<op\_type\_spec>!} is the type of the
+  return result.
+\item
+  The \passthrough{\lstinline!<identifier>!} provides a name for the
+  operation in the interface.
+\item
+  The operation parameters needed for the operation; they are flagged
+  with the modifiers \textbf{in}, \textbf{out}, or \textbf{inout} to
+  indicate the direction in which the information flows (with respect to
+  the object performing the request).
+\item
+  The optional \textbf{raises} expression indicates which user-defined
+  exceptions can be signaled to terminate an invocation of this
+  operation; if such an expression is not provided, no user-defined
+  exceptions will be signaled.
+\item
+  The optional \textbf{context} expression indicates which request
+  context information will be available to the object implementation; no
+  other contextual information is required to be transported with the
+  request.
+\end{itemize}
+
+\emph{Parameters}
+
+A parameter is characterized by its mode and its type. The \emph{mode}
+indicates whether the value should be passed from client to server
+(\textbf{in}), from server to client (\textbf{out}), or both
+(\textbf{inout}). The parameter's type constrains the possible value,
+which may be passed in the directions dictated by the mode.
+
+\emph{Return Result}
+
+The return result is a distinguished \textbf{out} parameter.
+
+\emph{Exceptions}
+
+An \emph{exception} is an indication that an operation request was not
+performed successfully. An exception may be accompanied by additional,
+exception-specific information.
+
+The additional, exception-specific information is a specialized form of
+record. As a record, it may consist of any of the types described in
+\hyperref[524-types]{Types}.
+
+All signatures implicitly include the system exceptions; the standard
+system exceptions are described in
+\hyperref[8122-system-exceptions]{System Exceptions}.
+
+\emph{Contexts}
+
+A \emph{request context} provides additional, operation-specific
+information that may affect the performance of a request.
+
+\emph{Execution Semantics}
+
+Two styles of execution semantics are defined by the object model:
+
+\begin{itemize}
+
+\item
+  At-most-once: if an operation request returns successfully, it was
+  performed exactly once; if it returns an exception indication, it was
+  performed at-most-once.
+\item
+  Best-effort: a best-effort operation is a request-only operation
+  (i.e., it cannot return any results and the requester never
+  synchronizes with the completion, if any, of the request).
+\end{itemize}
+
+The execution semantics to be expected is associated with an operation.
+This prevents a client and object implementation from assuming different
+execution semantics.
+
+Note that a client is able to invoke an at-most-once operation in a
+synchronous or deferred-synchronous manner.
+
+\subsubsection{5.2.9 Attributes}\label{attributes}
+
+An interface may have attributes. An attribute is logically equivalent
+to declaring a pair of accessor functions: one to retrieve the value of
+the attribute and one to set the value of the attribute.
+
+An attribute may be read-only, in which case only the retrieval accessor
+function is defined.
+
+\subsection{5.3 Object Implementation}\label{object-implementation}
+
+This sub clause defines the concepts associated with object
+implementation (i.e., the concepts relevant to realizing the behavior of
+objects in a computational system).
+
+The implementation of an object system carries out the computational
+activities needed to effect the behavior of requested services. These
+activities may include computing the results of the request and updating
+the system state. In the process, additional requests may be issued.
+
+The implementation model consists of two parts: the execution model and
+the construction model. The execution model describes how services are
+performed. The construction model describes how services are defined.
+
+\subsubsection{5.3.1 The Execution Model: Performing
+Services}\label{the-execution-model-performing-services}
+
+A requested service is performed in a computational system by executing
+code that operates upon some data. The data represents a component of
+the state of the computational system. The code performs the requested
+service, which may change the state of the system.
+
+Code that is executed to perform a service is called a \emph{method}. A
+method is an immutable description of a computation that can be
+interpreted by an execution engine. A method has an immutable attribute
+called a \emph{method format} that defines the set of execution engines
+that can interpret the method. An \emph{execution engine} is an abstract
+machine (not a program) that can interpret methods of certain formats,
+causing the described computations to be performed. An execution engine
+defines a dynamic context for the execution of a method. The execution
+of a method is called a \emph{method activation}.
+
+When a client issues a request, a method of the target object is called.
+The input parameters passed by the requestor are passed to the method
+and the output and input-output parameters and return result value (or
+exception and its parameters) are passed back to the requestor.
+
+Performing a requested service causes a method to execute that may
+operate upon an object's persistent state. If the persistent form of the
+method or state is not accessible to the execution engine, it may be
+necessary to first copy the method or state into an execution context.
+This process is called \emph{activation}; the reverse process is called
+\emph{deactivation}.
+
+\subsubsection{5.3.2 The Construction
+Model}\label{the-construction-model}
+
+A computational object system must provide mechanisms for realizing
+behavior of requests. These mechanisms include definitions of object
+state, definitions of methods, and definitions of how the object
+infrastructure is to select the methods to execute and to select the
+relevant portions of object state to be made accessible to the methods.
+Mechanisms must also be provided to describe the concrete actions
+associated with object creation, such as association of the new object
+with appropriate methods.
+
+An \emph{object implementation}---or \emph{implementation}, for
+short---is a definition that provides the information needed to create
+an object and to allow the object to participate in providing an
+appropriate set of services. An implementation typically includes, among
+other things, definitions of the methods that operate upon the state of
+an object. It also typically includes information about the intended
+types of the object.
+
+\section{6 CORBA Overview}\label{corba-overview}
+
+\subsection{6.1 General}\label{general}
+
+The Common Object Request Broker Architecture (CORBA) is structured to
+allow integration of a wide variety of object systems. The motivation
+for some of the features may not be apparent at first, but as we discuss
+the range of implementations, policies, optimizations, and usages we
+expect to encompass, the value of the flexibility becomes clearer.
+
+\subsection{6.2 Structure of an Object Request
+Broker}\label{structure-of-an-object-request-broker}
+
+Figure 6.1 shows a request being sent by a client to an object
+implementation. The Client is the entity that wishes to perform an
+operation on the object and the Object Implementation is the code and
+data that actually implements the object.
+
+{\includesvg[keepaspectratio]{images/figure6-1.svg}}
+
+\textbf{Figure 6.1 - A Request Being Sent Through the Object Request
+Broker}
+
+The ORB is responsible for all of the mechanisms required to find the
+object implementation for the request, to prepare the object
+implementation to receive the request, and to communicate the data
+making up the request. The interface the client sees is completely
+independent of where the object is located, what programming language it
+is implemented in, or any other aspect that is not reflected in the
+object's interface.
+
+Figure 6.2 shows the structure of an individual Object Request Broker
+(ORB). The interfaces to the ORB are shown by striped boxes, and the
+arrows indicate whether the ORB is called or performs an up-call across
+the interface.
+
+{\includesvg[keepaspectratio]{images/figure6-2.svg}}
+
+\textbf{Figure 6.2 - The Structure of Object Request Interfaces}
+
+To make a request, the Client can use the Dynamic Invocation interface
+(the same interface independent of the target object's interface) or an
+IDL stub (the specific stub depending on the interface of the target
+object). The Client can also directly interact with the ORB for some
+functions.
+
+The Object Implementation receives a request as an up-call either
+through the IDL generated skeleton or through a dynamic skeleton. The
+Object Implementation may call the Object Adapter and the ORB while
+processing a request or at other times.
+
+Definitions of the interfaces to objects can be defined in two ways. 1)
+Interfaces can be defined statically in an interface definition
+language, called the OMG Interface Definition Language (IDL). This
+language defines the types of objects according to the operations that
+may be performed on them and the parameters to those operations. 2)
+Alternatively, or in addition, interfaces can be added to an Interface
+Repository service. This service represents the components of an
+interface as objects, permitting run-time access to these components. In
+any ORB implementation, the Interface Definition Language (which may be
+extended beyond its definition in this document) and the Interface
+Repository have equivalent expressive power.
+
+The client performs a request by having access to an Object Reference
+for an object and knowing the type of the object and the desired
+operation to be performed. The client initiates the request by calling
+stub routines that are specific to the object or by constructing the
+request dynamically (see Figure 6.3).
+
+{\includesvg[keepaspectratio]{images/figure6-3.svg}}
+
+\textbf{Figure 6.3 - A Client Using the Stub or Dynamic Invocation
+Interface}
+
+The dynamic and stub interface for invoking a request satisfy the same
+request semantics, and the receiver of the message cannot tell how the
+request was invoked.
+
+The ORB locates the appropriate implementation code, transmits
+parameters, and transfers control to the Object Implementation through
+an IDL skeleton or a dynamic skeleton (see Figure 6.4). Skeletons are
+specific to the interface and the object adapter. In performing the
+request, the object implementation may obtain some services from the ORB
+through the Object Adapter. When the request is complete, control and
+output values are returned to the client.
+
+{\includesvg[keepaspectratio]{images/figure6-4.svg}}
+
+\textbf{Figure 6.4 - An Object Implementation Receiving a Request}
+
+The Object Implementation may choose which Object Adapter to use. This
+decision is based on what kind of services the Object Implementation
+requires.
+
+Figure 6.5 shows how interface and implementation information is made
+available to clients and object implementations. The interface is
+defined in IDL and/or in the Interface Repository; the definition is
+used to generate the client Stubs and the object implementation
+Skeletons.
+
+{\includesvg[keepaspectratio]{images/figure6-5.svg}}
+
+\textbf{Figure 6.5 - Interface and Implementation Repositories}
+
+The object implementation information is provided at installation time
+and is stored in the Implementation Repository for use during request
+delivery.
+
+\subsubsection{6.2.1 Object Request Broker}\label{object-request-broker}
+
+In the architecture, the ORB is not required to be implemented as a
+single component, but rather it is defined by its interfaces. Any ORB
+implementation that provides the appropriate interface is acceptable.
+The interface is organized into three categories:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+
+\item
+  Operations that are the same for all ORB implementations.
+\item
+  Operations that are specific to particular types of objects.
+\item
+  Operations that are specific to particular styles of object
+  implementations.
+\end{enumerate}
+
+Different ORBs may make quite different implementation choices, and,
+together with the IDL compilers, repositories, and various Object
+Adapters, provide a set of services to clients and implementations of
+objects that have different properties and qualities.
+
+There may be multiple ORB implementations (also described as multiple
+ORBs), which have different representations for object references and
+different means of performing invocations. It may be possible for a
+client to simultaneously have access to two object references managed by
+different ORB implementations. When two ORBs are intended to work
+together, those ORBs must be able to distinguish their object
+references. It is not the responsibility of the client to do so.
+
+The ORB Core is that part of the ORB that provides the basic
+representation of objects and communication of requests. CORBA is
+designed to support different object mechanisms, and it does so by
+structuring the ORB with components above the ORB Core, which provide
+interfaces that can mask the differences between ORB Cores.
+
+\subsubsection{6.2.2 Clients}\label{clients}
+
+A client of an object has access to an object reference for the object,
+and invokes operations on the object. A client knows only the logical
+structure of the object according to its interface and experiences the
+behavior of the object through invocations. Although we will generally
+consider a client to be a program or process initiating requests on an
+object, it is important to recognize that something is a client relative
+to a particular object. For example, the implementation of one object
+may be a client of other objects.
+
+Clients generally see objects and ORB interfaces through the perspective
+of a language mapping, bringing the ORB right up to the programmer's
+level. Clients are maximally portable and should be able to work without
+source changes on any ORB that supports the desired language mapping
+with any object instance that implements the desired interface. Clients
+have no knowledge of the implementation of the object, which object
+adapter is used by the implementation, or which ORB is used to access
+it.
+
+\subsubsection{6.2.3 Object
+Implementations}\label{object-implementations}
+
+An object implementation provides the semantics of the object, usually
+by defining data for the object instance and code for the object's
+methods. Often the implementation will use other objects or additional
+software to implement the behavior of the object. In some cases, the
+primary function of the object is to have side-effects on other things
+that are not objects.
+
+A variety of object implementations can be supported, including separate
+servers, libraries, a program per method, an encapsulated application,
+an object-oriented database, etc. Through the use of additional object
+adapters, it is possible to support virtually any style of object
+implementation.
+
+Generally, object implementations do not depend on the ORB or how the
+client invokes the object. Object implementations may select interfaces
+to ORB-dependent services by the choice of Object Adapter.
+
+\subsubsection{6.2.4 Object References}\label{object-references}
+
+An Object Reference is the information needed to specify an object
+within an ORB. Both clients and object implementations have an opaque
+notion of object references according to the language mapping, and thus
+are insulated from the actual representation of them. Two ORB
+implementations may differ in their choice of Object Reference
+representations.
+
+The representation of an object reference handed to a client is only
+valid for the lifetime of that client.
+
+All ORBs must provide the same language mapping to an object reference
+(usually referred to as an Object) for a particular programming
+language. This permits a program written in a particular language to
+access object references independent of the particular ORB. The language
+mapping may also provide additional ways to access object references in
+a typed way for the convenience of the programmer.
+
+There is a distinguished object reference, guaranteed to be different
+from all object references, that denotes no object.
+
+\subsubsection{6.2.5 OMG Interface Definition
+Language}\label{omg-interface-definition-language}
+
+The OMG Interface Definition Language (IDL) defines the types of objects
+by specifying their interfaces. An interface consists of a set of named
+operations and the parameters to those operations. Note that although
+IDL provides the conceptual framework for describing the objects
+manipulated by the ORB, it is not necessary for there to be IDL source
+code available for the ORB to work. As long as the equivalent
+information is available in the form of stub routines or a run-time
+interface repository, a particular ORB may be able to function
+correctly.
+
+IDL is the means by which a particular object implementation tells its
+potential clients what operations are available and how they should be
+invoked. From the IDL definitions, it is possible to map CORBA objects
+into particular programming languages or object systems.
+
+\subsubsection{6.2.6 Mapping of IDL to Programming
+Languages}\label{mapping-of-idl-to-programming-languages}
+
+Different object-oriented or non-object-oriented programming languages
+may prefer to access CORBA objects in different ways. For
+object-oriented languages, it may be desirable to see CORBA objects as
+programming language objects. Even for non-object-oriented languages, it
+is a good idea to hide the exact ORB representation of the object
+reference, method names, etc. A particular mapping of IDL to a
+programming language should be the same for all ORB implementations.
+Language mapping includes definition of the language-specific data types
+and procedure interfaces to access objects through the ORB. It includes
+the structure of the client stub interface (not required for
+object-oriented languages), the dynamic invocation interface, the
+implementation skeleton, the object adapters, and the direct ORB
+interface.
+
+A language mapping also defines the interaction between object
+invocations and the threads of control in the client or implementation.
+The most common mappings provide synchronous calls, in that the routine
+returns when the object operation completes. Additional mappings may be
+provided to allow a call to be initiated and control returned to the
+program. In such cases, additional language-specific routines must be
+provided to synchronize the program's threads of control with the object
+invocation.
+
+\subsubsection{6.2.7 Client Stubs}\label{client-stubs}
+
+Generally, the client stubs will present access to the IDL-defined
+operations on an object in a way that is easy for programmers to predict
+once they are familiar with IDL and the language mapping for the
+particular programming language. The stubs make calls on the rest of the
+ORB using interfaces that are private to, and presumably optimized for,
+the particular ORB Core. If more than one ORB is available, there may be
+different stubs corresponding to the different ORBs. In this case, it is
+necessary for the ORB and language mapping to cooperate to associate the
+correct stubs with the particular object reference.
+
+\subsubsection{6.2.8 Dynamic Invocation
+Interface}\label{dynamic-invocation-interface}
+
+An interface is also available that allows the dynamic construction of
+object invocations, that is, rather than calling a stub routine that is
+specific to a particular operation on a particular object, a client may
+specify the object to be invoked, the operation to be performed, and the
+set of parameters for the operation through a call or sequence of calls.
+The client code must supply information about the operation to be
+performed and the types of the parameters being passed (perhaps
+obtaining it from an Interface Repository or other run-time source). The
+nature of the dynamic invocation interface may vary substantially from
+one programming language mapping to another.
+
+\subsubsection{6.2.9 Implementation
+Skeleton}\label{implementation-skeleton}
+
+For a particular language mapping, and possibly depending on the object
+adapter, there will be an interface to the methods that implement each
+type of object. The interface will generally be an up-call interface, in
+that the object implementation writes routines that conform to the
+interface and the ORB calls them through the skeleton.
+
+The existence of a skeleton does not imply the existence of a
+corresponding client stub (clients can also make requests via the
+dynamic invocation interface).
+
+It is possible to write an object adapter that does not use skeletons to
+invoke implementation methods. For example, it may be possible to create
+implementations dynamically for languages such as Smalltalk.
+
+\subsubsection{6.2.10 Dynamic Skeleton
+Interface}\label{dynamic-skeleton-interface}
+
+An interface is available, which allows dynamic handling of object
+invocations. That is, rather than being accessed through a skeleton that
+is specific to a particular operation, an object's implementation is
+reached through an interface that provides access to the operation name
+and parameters in a manner analogous to the client side's Dynamic
+Invocation Interface. Purely static knowledge of those parameters may be
+used, or dynamic knowledge (perhaps determined through an Interface
+Repository) may also be used, to determine the parameters.
+
+The implementation code must provide descriptions of all the operation
+parameters to the ORB, and the ORB provides the values of any input
+parameters for use in performing the operation. The implementation code
+provides the values of any output parameters, or an exception, to the
+ORB after performing the operation. The nature of the dynamic skeleton
+interface may vary substantially from one programming language mapping
+or object adapter to another, but will typically be an up-call
+interface.
+
+Dynamic skeletons may be invoked both through client stubs and through
+the dynamic invocation interface; either style of client request
+construction interface provides identical results.
+
+\subsubsection{6.2.11 Object Adapters}\label{object-adapters}
+
+An object adapter is the primary way that an object implementation
+accesses services provided by the ORB. There are expected to be a few
+object adapters that will be widely available, with interfaces that are
+appropriate for specific kinds of objects. Services provided by the ORB
+through an Object Adapter often include: generation and interpretation
+of object references, method invocation, security of interactions,
+object and implementation activation and deactivation, mapping object
+references to implementations, and registration of implementations.
+
+The wide range of object granularities, lifetimes, policies,
+implementation styles, and other properties make it difficult for the
+ORB Core to provide a single interface that is convenient and efficient
+for all objects. Thus, through Object Adapters, it is possible for the
+ORB to target particular groups of object implementations that have
+similar requirements with interfaces tailored to them.
+
+\subsubsection{6.2.12 ORB Interface}\label{orb-interface}
+
+The ORB Interface is the interface that goes directly to the ORB, which
+is the same for all ORBs and does not depend on the object's interface
+or object adapter. Because most of the functionality of the ORB is
+provided through the object adapter, stubs, skeleton, or dynamic
+invocation, there are only a few operations that are common across all
+objects. These operations are useful to both clients and implementations
+of objects.
+
+\subsubsection{6.2.13 Interface Repository}\label{interface-repository}
+
+The Interface Repository is a service that provides persistent objects
+that represent the IDL information in a form available at run-time. The
+Interface Repository information may be used by the ORB to perform
+requests. Moreover, using the information in the Interface Repository,
+it is possible for a program to encounter an object whose interface was
+not known when the program was compiled, yet, be able to determine what
+operations are valid on the object and make an invocation on it.
+
+In addition to its role in the functioning of the ORB, the Interface
+Repository is a common place to store additional information associated
+with interfaces to ORB objects. For example, debugging information,
+libraries of stubs or skeletons, routines that can format or browse
+particular kinds of objects might be associated with the Interface
+Repository.
+
+\subsubsection{6.2.14 Implementation
+Repository}\label{implementation-repository}
+
+The Implementation Repository contains information that allows the ORB
+to locate and activate implementations of objects. Although most of the
+information in the Implementation Repository is specific to an ORB or
+operating environment, the Implementation Repository is the conventional
+place for recording such information. Ordinarily, installation of
+implementations and control of policies related to the activation and
+execution of object implementations is done through operations on the
+Implementation Repository.
+
+In addition to its role in the functioning of the ORB, the
+Implementation Repository is a common place to store additional
+information associated with implementations of ORB objects. For example,
+debugging information, administrative control, resource allocation,
+security, etc., might be associated with the Implementation Repository.
+
+\subsection{6.3 Example ORBs}\label{example-orbs}
+
+There are a wide variety of ORB implementations possible within the
+Common ORB Architecture. This sub clause will illustrate some of the
+different options. Note that a particular ORB might support multiple
+options and protocols for communication.
+
+\subsubsection{6.3.1 Client- and Implementation-resident
+ORB}\label{client--and-implementation-resident-orb}
+
+If there is a suitable communication mechanism present, an ORB can be
+implemented in routines resident in the clients and implementations. The
+stubs in the client either use a location-transparent IPC mechanism or
+directly access a location service to establish communication with the
+implementations. Code linked with the implementation is responsible for
+setting up appropriate databases for use by clients.
+
+\subsubsection{6.3.2 Server-based ORB}\label{server-based-orb}
+
+To centralize the management of the ORB, all clients and implementations
+can communicate with one or more servers whose job it is to route
+requests from clients to implementations. The ORB could be a normal
+program as far as the underlying operating system is concerned, and
+normal IPC could be used to communicate with the ORB.
+
+\subsubsection{6.3.3 System-based ORB}\label{system-based-orb}
+
+To enhance security, robustness, and performance, the ORB could be
+provided as a basic service of the underlying operating system. Object
+references could be made unforgeable, reducing the expense of
+authentication on each request. Because the operating system could know
+the location and structure of clients and implementations, it would be
+possible for a variety of optimizations to be implemented, for example,
+avoiding marshalling when both are on the same machine.
+
+\subsubsection{6.3.4 Library-based ORB}\label{library-based-orb}
+
+For objects that are light-weight and whose implementations can be
+shared, the implementation might actually be in a library. In this case,
+the stubs could be the actual methods. This assumes that it is possible
+for a client program to get access to the data for the objects and that
+the implementation trusts the client not to damage the data.
+
+\subsection{6.4 Structure of a Client}\label{structure-of-a-client}
+
+A client of an object has an object reference that refers to that
+object. An object reference is a token that may be invoked or passed as
+a parameter to an invocation on a different object. Invocation of an
+object involves specifying the object to be invoked, the operation to be
+performed, and parameters to be given to the operation or returned from
+it.
+
+The ORB manages the control transfer and data transfer to the object
+implementation and back to the client. In the event that the ORB cannot
+complete the invocation, an exception response is provided. Ordinarily,
+a client calls a routine in its program that performs the invocation and
+returns when the operation is complete.
+
+Clients access object-type-specific stubs as library routines in their
+program (see Figure 6.6). The client program thus sees routines callable
+in the normal way in its programming language. All implementations will
+provide a language-specific data type to use to refer to objects, often
+an opaque pointer. The client then passes that object reference to the
+stub routines to initiate an invocation. The stubs have access to the
+object reference representation and interact with the ORB to perform the
+invocation. (See the \emph{C Language Mapping} specification for
+additional, general information on language mapping of object
+references.)
+
+{\includesvg[keepaspectratio]{images/figure6-6.svg}}
+
+\textbf{Figure 6.6 - The Structure of a Typical Client}
+
+An alternative set of library code is available to perform invocations
+on objects, for example when the object was not defined at compile time.
+In that case, the client program provides additional information to name
+the type of the object and the method being invoked, and performs a
+sequence of calls to specify the parameters and initiate the invocation.
+
+Clients most commonly obtain object references by receiving them as
+output parameters from invocations on other objects for which they have
+references. When a client is also an implementation, it receives object
+references as input parameters on invocations to objects it implements.
+An object reference can also be converted to a string that can be stored
+in files or preserved or communicated by different means and
+subsequently turned back into an object reference by the ORB that
+produced the string.
+
+\subsection{6.5 Structure of an Object
+Implementation}\label{structure-of-an-object-implementation}
+
+An object implementation provides the actual state and behavior of an
+object. The object implementation can be structured in a variety of
+ways. Besides defining the methods for the operations themselves, an
+implementation will usually define procedures for activating and
+deactivating objects and will use other objects or non-object facilities
+to make the object state persistent, to control access to the object, as
+well as to implement the methods.
+
+The object implementation (see Figure 6.7) interacts with the ORB in a
+variety of ways to establish its identity, to create new objects, and to
+obtain ORB-dependent services. It primarily does this via access to an
+Object Adapter, which provides an interface to ORB services that is
+convenient for a particular style of object implementation.
+
+\textbf{Object Implementation}
+
+{\includesvg[keepaspectratio]{images/figure6-7.svg}}
+
+\textbf{Figure 6.7 - The Structure of a Typical Object Implementation}
+
+Because of the range of possible object implementations, it is difficult
+to be definitive about how an object implementation is structured. See
+the clauses on the \hyperref[671-portable-object-adapter]{Portable
+Object Adapter}.
+
+When an invocation occurs, the ORB Core, object adapter, and skeleton
+arrange that a call is made to the appropriate method of the
+implementation. A parameter to that method specifies the object being
+invoked, which the method can use to locate the data for the object.
+Additional parameters are supplied according to the skeleton definition.
+When the method is complete, it returns, causing output parameters or
+exception results to be transmitted back to the client.
+
+When a new object is created, the ORB may be notified so that it knows
+where to find the implementation for that object. Usually, the
+implementation also registers itself as implementing objects of a
+particular interface, and specifies how to start up the implementation
+if it is not already running.
+
+Most object implementations provide their behavior using facilities in
+addition to the ORB and object adapter. For example, although the
+Portable Object Adapter provides some persistent data associated with an
+object (its OID or Object ID), that relatively small amount of data is
+typically used as an identifier for the actual object data stored in a
+storage service of the object implementation's choosing. With this
+structure, it is not only possible for different object implementations
+to use the same storage service, it is also possible for objects to
+choose the service that is most appropriate for them.
+
+\subsection{6.6 Structure of an Object
+Adapter}\label{structure-of-an-object-adapter}
+
+An object adapter (see Figure 6.8) is the primary means for an object
+implementation to access ORB services such as object reference
+generation. An object adapter exports a public interface to the object
+implementation, and a private interface to the skeleton. It is built on
+a private ORB-dependent interface.
+
+Object adapters are responsible for the following functions:
+
+\begin{itemize}
+
+\item
+  Generation and interpretation of object references
+\item
+  Method invocation
+\item
+  Security of interactions
+\item
+  Object and implementation activation and deactivation
+\item
+  Mapping object references to the corresponding object implementations
+\item
+  Registration of implementations
+\end{itemize}
+
+These functions are performed using the ORB Core and any additional
+components necessary. Often, an object adapter will maintain its own
+state to accomplish its tasks. It may be possible for a particular
+object adapter to delegate one or more of its responsibilities to the
+Core upon which it is constructed.
+
+{\includesvg[keepaspectratio]{images/figure6-8.svg}}
+
+\textbf{Figure 6.8 - The Structure of a Typical Object Adapter}
+
+As shown in Figure 6.8, the Object Adapter is implicitly involved in
+invocation of the methods, although the direct interface is through the
+skeletons. For example, the Object Adapter may be involved in activating
+the implementation or authenticating the request.
+
+The Object Adapter defines most of the services from the ORB that the
+Object Implementation can depend on. Different ORBs will provide
+different levels of service and different operating environments may
+provide some properties implicitly and require others to be added by the
+Object Adapter. For example, it is common for Object Implementations to
+want to store certain values in the object reference for easy
+identification of the object on an invocation. If the Object Adapter
+allows the implementation to specify such values when a new object is
+created, it may be able to store them in the object reference for those
+ORBs that permit it. If the ORB Core does not provide this feature, the
+Object Adapter would record the value in its own storage and provide it
+to the implementation on an invocation. With Object Adapters, it is
+possible for an Object Implementation to have access to a service
+whether or not it is implemented in the ORB Core --- if the ORB Core
+provides it, the adapter simply provides an interface to it; if not, the
+adapter must implement it on top of the ORB Core. Every instance of a
+particular adapter must provide the same interface and service for all
+the ORBs it is implemented on.
+
+It is also not necessary for all Object Adapters to provide the same
+interface or functionality. Some Object
+
+Implementations have special requirements. For example, an
+object-oriented database system may wish to implicitly register its many
+thousands of objects without doing individual calls to the Object
+Adapter. In such a case, it would be impractical and unnecessary for the
+object adapter to maintain any per-object state. By using an object
+adapter interface that is tuned towards such object implementations, it
+is possible to take advantage of particular ORB Core details to provide
+the most effective access to the ORB.
+
+\subsection{6.7 CORBA Required Object
+Adapter}\label{corba-required-object-adapter}
+
+There are a variety of possible object adapters; however, since the
+object adapter interface is something that object implementations depend
+on, it is desirable that there be as few as practical. Most object
+adapters are designed to cover a range of object implementations, so
+only when an implementation requires radically different services or
+interfaces should a new object adapter be considered. In this sub
+clause, we briefly describe the object adapter defined in this
+specification.
+
+\subsubsection{6.7.1 Portable Object
+Adapter}\label{portable-object-adapter}
+
+This specification defines a Portable Object Adapter that can be used
+for most ORB objects with conventional implementations. (See the
+\hyperref[671-portable-object-adapter]{\emph{Portable Object Adapter}}
+clause for more information.) The intent of the POA, as its name
+suggests, is to provide an Object Adapter that can be used with multiple
+ORBs with a minimum of rewriting needed to deal with different vendors'
+implementations.
+
+This specification allows several ways of using servers but it does not
+deal with the administrative issues of starting server programs. Once
+started, however, there can be a servant started and ended for a single
+method call, a separate servant for each object, or a shared servant for
+all instances of the object type. It allows for groups of objects to be
+associated by means of being registered with different instances of the
+POA object and allows implementations to specify their own activation
+techniques. If the implementation is not active when an invocation is
+performed, the POA will start one. The POA is specified in IDL, so its
+mapping to languages is largely automatic, following the language
+mapping rules. (The primary task left for a language mapping is the
+definition of the Servant type.)
+
+\subsection{6.8 The Integration of Foreign Object
+Systems}\label{the-integration-of-foreign-object-systems}
+
+The Common ORB Architecture is designed to allow interoperation with a
+wide range of object systems (see Figure 6.9). Because there are many
+existing object systems, a common desire will be to allow the objects in
+those systems to be accessible via the ORB. For those object systems
+that are ORBs themselves, they may be connected to other ORBs through
+the mechanisms described throughout this manual.
+
+{\includesvg[keepaspectratio]{images/figure6-9.svg}}
+
+\textbf{Figure 6.9 - Different Ways to Integrate Foreign Object Systems}
+
+For object systems that simply want to map their objects into ORB
+objects and receive invocations through the ORB, one approach is to have
+those object systems appear to be implementations of the corresponding
+ORB objects. The object system would register its objects with the ORB
+and handle incoming requests, and could act like a client and perform
+outgoing requests.
+
+In some cases, it will be impractical for another object system to act
+like a POA object implementation. An object adapter could be designed
+for objects that are created in conjunction with the ORB and that are
+primarily invoked through the
+
+ORB. Another object system may wish to create objects without consulting
+the ORB, and might expect most invocations to occur within itself rather
+than through the ORB. In such a case, a more appropriate object adapter
+might allow objects to be implicitly registered when they are passed
+through the ORB.
+
+\section{7 IDL Syntax and Semantics}\label{idl-syntax-and-semantics}
+
+\subsection{7.1 Overview}\label{overview-1}
+
+Although it was originally defined here, the Interface Definition
+Language is now maintained in a separate OMG specification. See
+{[}IDL4{]} section 7.1 for the Overview and section 9.2 for the CORBA
+and CCM Profiles of IDL.
+
+\subsection{7.2 Lexical Conventions}\label{lexical-conventions}
+
+See {[}IDL4{]} section 7.2.
+
+\subsection{7.3 Preprocessing}\label{preprocessing}
+
+See {[}IDL4{]} section 7.3.
+
+\subsection{7.4 IDL Grammar}\label{idl-grammar}
+
+See {[}IDL4{]} sections 7.4 (the introduction before 7.4.1), 9.2,
+7.4.1-10, and Annex A.
+
+\subsection{7.5 IDL Specification}\label{idl-specification}
+
+See {[}IDL4{]} sections 7.4.1.4.1, 7.4.3.4.1, 7.4.5.4, 7.4.6.4.1.
+
+\subsection{7.6 Import Declaration}\label{import-declaration}
+
+See {[}IDL4{]} section 7.4.6.4.1.4.
+
+\subsection{7.7 Module Declaration}\label{module-declaration}
+
+See {[}IDL4{]} section 7.4.1.4.2.
+
+\subsection{7.8 Interface Declaration}\label{interface-declaration}
+
+See {[}IDL4{]} sections 7.4.3.4.3, 7.4.4, 7.4.6.
+
+\subsection{7.9 Value Declaration}\label{value-declaration}
+
+See {[}IDL4{]} sections 7.4.5 and 7.4.7.
+
+\subsection{7.10 Constant Declaration}\label{constant-declaration}
+
+See {[}IDL4{]} section 7.4.1.4.3.
+
+\subsection{7.11 Type Declaration}\label{type-declaration}
+
+See {[}IDL4{]} sections 7.4.1.4.4 and 7.4.2.
+
+\subsection{7.12 Exception Declaration}\label{exception-declaration}
+
+See {[}IDL4{]} section 7.4.3.4.2.
+
+\subsection{7.13 Operation Declaration}\label{operation-declaration}
+
+See {[}IDL4{]} sections 7.4.34.3.3.1, 7.4.6.4.5, 7.4.6.4.6.
+
+\subsection{7.14 Attribute Declaration}\label{attribute-declaration}
+
+See {[}IDL4{]} section 7.4.3.4.3.3.2.
+
+\subsection{7.15 Repository Identity Related
+Declarations}\label{repository-identity-related-declarations}
+
+See {[}IDL4{]} section 7.4.6.4.1.
+
+\subsection{7.16 Event Declaration}\label{event-declaration}
+
+See {[}IDL4{]} section 7.4.10.4.1.1.
+
+\subsection{7.17 Component Declaration}\label{component-declaration}
+
+See {[}IDL4{]} sections 7.4.8 and 7.4.10.
+
+\subsection{7.18 Home Declaration}\label{home-declaration}
+
+See {[}IDL4{]} section 7.4.9.
+
+\subsection{7.19 CORBA Module}\label{corba-module}
+
+See {[}IDL4{]} section 7.4.6.4.7.
+
+\subsection{7.20 Names and Scoping}\label{names-and-scoping}
+
+See {[}IDL4{]} section 7.5.
+
+\section{8 ORB Interface}\label{orb-interface-1}
+
+\subsection{8.1 Overview}\label{overview-2}
+
+This clause introduces the operations that are implemented by the ORB
+core, and describes some basic ones, while providing reference to the
+description of the remaining operations that are described elsewhere.
+The \textbf{ORB} interface is the interface to those ORB functions that
+do not depend on which object adapter is used. These operations are the
+same for all ORBs and all object implementations, and can be performed
+either by clients of the objects or implementations. The \textbf{Object}
+interface contains operations that are implemented by the ORB, and are
+accessed as implicit operations of the Object Reference. The
+\textbf{ValueBase} interface contains operations that are implemented by
+the ORB, and are accessed as implicit operations of the
+\textbf{ValueBase} Reference.
+
+Because the operations in this sub clause are implemented by the ORB
+itself, they are not in fact operations on objects, although they are
+described that way for the \textbf{Object} or \textbf{ValueBase}
+interface operations and the language binding will, for consistency,
+make them appear that way.
+
+\subsection{8.2 The ORB Operations}\label{the-orb-operations}
+
+The \textbf{ORB} interface contains the operations that are available to
+both clients and servers. These operations do not depend on any specific
+object adapter or any specific object reference.
+
+\begin{lstlisting}
+module CORBA {
+
+ interface NVList;    // forward declaration
+ interface OperationDef;  // forward declaration
+ interface TypeCode;   // forward declaration
+
+ typedef short PolicyErrorCode;
+
+ // for the definition of consts see PolicyErrorCode
+
+ typedef unsigned long PolicyType;
+
+ interface Request;    // forward declaration
+ typedef sequence <Request> RequestSeq;
+
+ native AbstractBase;
+
+ exception PolicyError {PolicyErrorCode reason;};
+
+ typedef string RepositoryId;
+ typedef string Identifier;
+
+ // StructMemberSeq defined in Chapter 10
+ // UnionMemberSeq defined in Chapter 10
+ // EnumMemberSeq defined in Chapter 10
+
+ typedef unsigned short ServiceType;
+ typedef unsigned long ServiceOption;
+ typedef unsigned long ServiceDetailType;
+
+ typedef CORBA::OctetSeq ServiceDetailData;
+ typedef sequence<ServiceOption> ServiceOptionSeq;
+
+ const ServiceType Security = 1;
+
+ struct ServiceDetail {
+  ServiceDetailType service_detail_type;
+  ServiceDetailData service_detail;
+
+ };
+ typedef sequence<ServiceDetail> ServiceDetailSeq;
+
+ struct ServiceInformation {
+  ServiceOptionSeq service_options;
+  ServiceDetailSeq service_details;
+ };
+
+ native ValueFactory;
+
+ typedef string ORBid;
+
+ interface ORB {
+
+  typedef string ObjectId;
+  typedef sequence <ObjectId> ObjectIdList;
+
+ exception InvalidName {};
+
+ ORBid id();
+
+ string object_to_string (
+  in Object   obj
+ );
+
+ Object string_to_object (
+ in string    str
+ );
+
+ // Dynamic Invocation related operations
+
+ void create_list (
+  in long count,
+  out NVList new_list
+ );
+
+ void create_operation_list (
+  in OperationDef  oper,
+  out NVList    new_list
+ );
+
+ void get_default_context (
+ out Context    ctx
+ );
+ void send_multiple_requests_oneway(
+ in RequestSeq    req
+ );
+ void send_multiple_requests_deferred(
+ in RequestSeq    req
+ );
+ boolean poll_next_response();
+
+ void get_next_response(
+  out Request req
+ ) raises (WrongTransaction);
+
+ // Service information operations
+
+ boolean get_service_information (
+    in ServiceType service_type,
+    out ServiceInformation service_information
+ );
+
+ ObjectIdList list_initial_services ();
+
+ // Initial reference operation
+
+ Object resolve_initial_references (
+  in ObjectId identifier
+ ) raises (InvalidName);
+
+ // Type code creation operations
+
+ TypeCode create_struct_tc (
+  in RepositoryId id,
+  in Identifier name,
+  in StructMemberSeq members
+ );
+
+ TypeCode create_union_tc (
+  in RepositoryId id,
+  in Identifier name,
+  in TypeCode discriminator_type,
+  in UnionMemberSeq members
+ );
+
+ TypeCode create_enum_tc (
+  in RepositoryId id,
+  in Identifier name,
+  in EnumMemberSeq members
+ );
+
+ TypeCode create_alias_tc (
+  in RepositoryId id,
+  in Identifier name,
+  in TypeCode original_type
+ );
+
+ TypeCode create_exception_tc (
+  in RepositoryId id,
+  in Identifier name,
+  in StructMemberSeq members
+ );
+
+ TypeCode create_interface_tc (
+  in RepositoryId id,
+  in Identifier name
+ );
+
+ TypeCode create_string_tc (
+  in unsigned long bound
+ );
+
+ TypeCode create_wstring_tc (
+  in unsigned long bound
+ );
+
+ TypeCode create_fixed_tc (
+  in unsigned short digits,
+  in short scale
+ );
+
+ TypeCode create_sequence_tc (
+  in unsigned long bound,
+  in TypeCode element type
+ );
+
+ TypeCode create_recursive_sequence_tc (// deprecated
+  in unsigned long bound,
+  in unsigned long offset
+ );
+
+ TypeCode create_array_tc (
+  in unsigned long length,
+  in TypeCode element_type
+ );
+
+ TypeCode create_value_tc (
+  in RepositoryId   id,
+  in Identifier    name,
+  in ValueModifier   type_modifier,
+  in TypeCode    concrete_base,
+  in ValueMemberSeq   members
+ );
+ TypeCode create_value_box_tc (
+  in RepositoryId   id,
+  in Identifier   name,
+  in TypeCode    boxed_type
+ );
+
+ TypeCode create_native_tc (
+  in RepositoryId    id,
+  in Identifier    name
+ );
+
+ TypeCode create_recursive_tc(
+  in RepositoryId   id
+ );
+
+ TypeCode create_abstract_interface_tc(
+  in RepositoryId   id,
+  in Identifier    name
+ );
+
+ TypeCode create_local_interface_tc(
+  in RepositoryId   id,
+  in Identifier   name
+ );
+
+ TypeCode create_component_tc (
+ in RepositoryId    id,
+ in Identifier     name
+ );
+
+ TypeCode create_home_tc (
+  in RepositoryId   id,
+  in Identifier   name
+ );
+
+ TypeCode create_event_tc (
+  in RepositoryId   id,
+  in Identifier    name,
+  in ValueModifier   type_modifier,
+  in TypeCode    concrete_base,
+  in ValueMemberSeq   members
+ );
+
+ // Thread related operations
+
+ boolean work_pending( );
+
+ void perform_work();
+
+ void run();
+
+ void shutdown(
+  in boolean wait_for_completion
+ );
+
+ void destroy();
+
+ // Policy related operations
+
+ Policy create_policy(
+  in PolicyType    type,
+  in any      val
+ ) raises (PolicyError);
+
+ // Dynamic Any related operations deprecated and removed
+ // from primary list of ORB operations
+
+ // Value factory operations
+
+ ValueFactory register_value_factory(
+  in RepositoryId id,
+  in ValueFactory_factory
+ );
+
+ void unregister_value_factory(in RepositoryId id);
+
+ ValueFactory lookup_value_factory(in RepositoryId id);
+
+ void register_initial_reference(
+  in ObjectId id,
+  in Object obj
+   ) raises (InvalidName);
+   };
+};
+\end{lstlisting}
+
+All types defined in this clause are part of the CORBA module. When
+referenced in IDL, the type names must be prefixed by
+``\textbf{CORBA::}''.
+
+The operations \textbf{object\_to\_string} and
+\textbf{string\_to\_object} are described in
+\hyperref[822-converting-object-references-to-strings]{Converting Object
+References to Strings}.
+
+For a description of the \textbf{create\_list} and
+\textbf{create\_operation\_list} operations, see
+\hyperref[114-polling]{Polling}. The \textbf{get\_default\_context}
+operation is described in
+\hyperref[8241-get_default_context]{get\_default\_context}. The
+\textbf{send\_multiple\_requests\_oneway} and
+\textbf{send\_multiple\_requests\_deferred} operations are described in
+\hyperref[1131-send_multiple_requests]{send\_multiple\_requests}. The
+\textbf{poll\_next\_response} and \textbf{get\_next\_response}
+operations are described in
+\hyperref[1132-get_next_response-and-poll_next_response]{get\_next\_response}
+and
+\hyperref[1132-get_next_response-and-poll_next_response]{poll\_next\_response}.
+
+The \textbf{list\_intial\_services} and
+\textbf{resolve\_initial\_references} operations are described in
+\hyperref[852-obtaining-initial-object-references]{Obtaining Initial
+Object References}.
+
+The Type code creation operations with names of the form
+\passthrough{\lstinline!create\_<type>\_tc!} are described in
+\hyperref[8113-creating-typecodes]{Creating TypeCodes}.
+
+The \textbf{work\_pending}, \textbf{perform\_work}, \textbf{shutdown,}
+\textbf{destroy} and \textbf{run} operations are described in
+\hyperref[825-thread-related-operations]{Thread-Related Operations}.
+
+The \textbf{create\_policy} operations is described in
+\hyperref[8823-create_policy]{Create\_policy}.
+
+The \textbf{register\_value\_factory},
+\textbf{unregister\_value\_factory} and \textbf{lookup\_value\_factory}
+operations are described in
+\hyperref[943-language-specific-value-factory-requirements]{Language
+Specific Value Factory} Requirements.
+
+The \textbf{register\_initial\_reference} operation is described in
+\hyperref[16101-register_initial_reference]{register\_initial\_reference}.
+
+\subsubsection{8.2.1 ORB Identity}\label{orb-identity}
+
+\textbf{8.2.1.1 id}
+
+\textbf{ORBid id();}
+
+The \textbf{id} operation returns the identity of the ORB. The returned
+\textbf{ORBid} is the string that was passed to \textbf{ORB\_init} (see
+\hyperref[851-orb-initialization]{ORB Initialization}) as the
+\textbf{orb\_identifier} parameter when the ORB was created. If that was
+the empty string, the returned string is the value associated with the
+\textbf{-ORBid} tag in the \textbf{arg\_list} parameter. Calling
+\textbf{id} on the default ORB returns the empty string.
+
+\subsubsection{8.2.2 Converting Object References to
+Strings}\label{converting-object-references-to-strings}
+
+\textbf{8.2.2.1 object\_to\_string}
+
+\begin{lstlisting}
+string object_to_string (
+in Object     obj
+);
+\end{lstlisting}
+
+\textbf{8.2.2.2 string\_to\_object}
+
+\begin{lstlisting}
+Object string_to_object (
+in string     str
+);
+\end{lstlisting}
+
+Because an object reference is opaque and may differ from ORB to ORB,
+the object reference itself is not a convenient value for storing
+references to objects in persistent storage or communicating references
+by means other than invocation. Two problems must be solved: allowing an
+object reference to be turned into a value that a client can store in
+some other medium, and ensuring that the value can subsequently be
+turned into the appropriate object reference.
+
+An object reference may be translated into a string by the operation
+\textbf{object\_to\_string}. The value may be stored or communicated in
+whatever ways strings may be manipulated. Subsequently, the
+\textbf{string\_to\_object} operation will accept a string produced by
+\textbf{object\_to\_string} and return the corresponding object
+reference.
+
+To guarantee that an ORB will understand the string form of an object
+reference, that ORB's \textbf{object\_to\_string} operation must be used
+to produce the string. For all conforming ORBs, if \textbf{obj} is a
+valid reference to an object, then
+\textbf{string\_to\_object(object\_to\_string(obj))} will return a valid
+reference to the same object, if the two operations are performed on the
+same ORB. For all conforming ORB's supporting IOP, this remains true
+even if the two operations are performed on different ORBs.
+
+\subsubsection{8.2.3 Getting Service
+Information}\label{getting-service-information}
+
+\textbf{8.2.3.1 get\_service\_information}
+
+\begin{lstlisting}
+boolean get_service_information (
+  in ServiceType service_type;
+  out ServiceInformation service_information;
+);
+\end{lstlisting}
+
+The \textbf{get\_service\_information} operation is used to obtain
+information about CORBA facilities and services that are supported by
+this ORB. The service type for which information is being requested is
+passed in as the in parameter \textbf{service\_type}, the values defined
+by constants in the \textbf{CORBA} module. If service information is
+available for that type, that is returned in the out parameter
+\textbf{service\_information}, and the operation returns the value
+\textbf{TRUE}. If no information for the requested services type is
+available, the operation returns \textbf{FALSE} (i.e., the service is
+not supported by this ORB).
+
+\subsubsection{8.2.4 Creating a New
+Context}\label{creating-a-new-context}
+
+\paragraph{8.2.4.1 get\_default\_context}\label{get_default_context}
+
+\begin{lstlisting}
+void get_default_context(     // PIDL
+out Context    ctx           // context object
+);
+\end{lstlisting}
+
+This operation creates a new empty Context object every time it is
+called. The operation is defined in the \textbf{ORB} interface.
+
+\subsubsection{8.2.5 Thread-Related
+Operations}\label{thread-related-operations}
+
+To support single-threaded ORBs, as well as multi-threaded ORBs that run
+multi-thread-unaware code, several operations are included in the
+\textbf{ORB} interface. These operations can be used by single-threaded
+and multi-threaded applications. An application that is a pure ORB
+client would not need to use these operations. Both the
+\textbf{ORB::run} and \textbf{ORB::shutdown} are useful in fully
+multi-threaded programs.
+
+These operations are defined on the ORB rather than on an object adapter
+to allow the main thread to be used for all kinds of asynchronous
+processing by the ORB. Defining these operations on the ORB also allows
+the ORB to support multiple object adapters, without requiring the
+application main to know about all the object adapters. The interface
+between the ORB and an object adapter is not standardized.
+
+\textbf{8.2.5.1 work\_pending}
+
+\passthrough{\lstinline!boolean work\_pending( );!}
+
+This operation returns an indication of whether the ORB needs the main
+thread to perform some work.
+
+A result of TRUE indicates that the ORB needs the main thread to perform
+some work and a result of FALSE indicates that the ORB does not need the
+main thread.
+
+\textbf{8.2.5.2 perform\_work}
+
+\passthrough{\lstinline!void perform\_work();!}
+
+If called by the main thread, this operation performs an
+implementation-defined unit of work; otherwise, it does nothing.
+
+It is platform-specific how the application and ORB arrange to use
+compatible threading primitives.
+
+The \textbf{work\_pending()} and \textbf{perform\_work()} operations can
+be used to write a simple polling loop that multiplexes the main thread
+among the ORB and other activities. Such a loop would most likely be
+needed in a single-threaded server. A multi-threaded server would need a
+polling loop only if there were both ORB and other code that required
+use of the main thread.
+
+Here is an example of such a polling loop:
+
+\begin{lstlisting}
+// C++
+   for (;;) {
+        if (orb->work_pending()) {
+          orb->perform_work();
+    };
+    // do other things
+   // sleep?
+};
+\end{lstlisting}
+
+Once the ORB has shutdown, \textbf{work\_pending} and
+\textbf{perform\_work} will raise the BAD\_INV\_ORDER exception with
+minor code 4. An application can detect this exception to determine when
+to terminate a polling loop.
+
+\textbf{8.2.5.3 run void run();}
+
+This operation provides execution resources to the ORB so that it can
+perform its internal functions. Single threaded ORB implementations, and
+some multi-threaded ORB implementations, need the use of the main thread
+in order to function properly. For maximum portability, an application
+should call either \textbf{run} or \textbf{perform\_work} on its main
+thread. \textbf{run} may be called by multiple threads simultaneously.
+
+This operation will block until the ORB has completed the shutdown
+process, initiated when some thread calls \textbf{shutdown}.
+
+\textbf{8.2.5.4 shutdown}
+
+\begin{lstlisting}
+void shutdown(
+in boolean    wait_for_completion
+);
+\end{lstlisting}
+
+This operation instructs the ORB to shut down, that is, to stop
+processing in preparation for destruction.
+
+Shutting down the ORB causes all object adapters to be destroyed, since
+they cannot exist in the absence of an ORB.
+
+In the case of the \textbf{POA}, all \textbf{POAManager}s are
+deactivated prior to destruction of all POAs. The deactivation that the
+ORB performs should be the equivalent of calling deactivate with the
+value \textbf{TRUE} for \textbf{etherealize\_objects} and with the
+\textbf{wait\_for\_completion} parameter same as what \textbf{shutdown}
+was called with.
+
+Shut down is complete when all ORB processing (including request
+processing and object deactivation or other operations associated with
+object adapters) has completed and the object adapters have been
+destroyed. In the case of the \textbf{POA}, this means that all object
+etherealizations have finished and root \textbf{POA} has been destroyed
+(implying that all descendent \textbf{POA}s have also been destroyed).
+
+Shut down is complete when all \textbf{ORB} processing has completed and
+the object adapters have been destroyed. \textbf{ORB} processing is
+defined as including request processing and object deactivation or other
+operations associated with object adapters, and the forwarding of the
+responses from deferred synchronous invocations to their associated
+reply handlers. In the case of the \textbf{POA}, this means that all
+object etherealizations have finished and root POA has been destroyed
+(implying that all descendent \textbf{POA}s have also been destroyed).
+
+If the \textbf{wait\_for\_completion} parameter is \textbf{TRUE}, this
+operation blocks until the shut down is complete. If an application does
+this in a thread that is currently servicing an invocation, the ORB will
+not shutdown, and the BAD\_INV\_ORDER system exception will be raised
+with the OMG minor code 3, and completion status COMPLETED\_NO, since
+blocking would result in a deadlock.
+
+If the \textbf{wait\_for\_completion} parameter is \textbf{FALSE}, then
+\textbf{shutdown} may not have completed upon return. An ORB
+implementation may require the application to call (or have a pending
+call to) \textbf{run} or \textbf{perform\_work} after \textbf{shutdown}
+has been called with its parameter set to \textbf{FALSE}, in order to
+complete the shutdown process.
+
+Additionally in systems that have Portable Object Adapters (see Clause
+14) \textbf{shutdown} behaves as if \textbf{POA::destroy} is called on
+the Root \textbf{POA} with its first parameter set to TRUE and the
+second parameter set to the value of the \textbf{wait\_for\_completion}
+parameter that \textbf{shutdown} is invoked with.
+
+While the ORB is in the process of shutting down, the ORB operates as
+normal, servicing incoming and outgoing requests until all requests have
+been completed. An implementation may impose a time limit for requests
+to complete while a \textbf{shutdown} is pending.
+
+Once an ORB has shutdown, only object reference management
+operations(\textbf{duplicate}, \textbf{release} and \textbf{is\_nil})
+may be invoked on the ORB or any object reference obtained from it. An
+application may also invoke the destroy operation on the ORB itself.
+Invoking any other operation will raise the BAD\_INV\_ORDER system
+exception with the OMG minor code 4.
+
+\textbf{8.2.5.5 destroy}
+
+\passthrough{\lstinline!void destroy();!}
+
+This operation destroys the ORB so that its resources can be reclaimed
+by the application. Any operation invoked on a destroyed ORB reference
+will raise the OBJECT\_NOT\_EXIST exception. Once an ORB has been
+destroyed, another call to \textbf{ORB\_init} with the same
+\textbf{ORBid} will return a reference to a newly constructed ORB.
+
+If \textbf{destroy} is called on an ORB that has not been shut down, it
+will start the shut down process and block until the ORB has shut down
+before it destroys the ORB. The behavior is similar to that achieved by
+calling \textbf{shutdown} with the \textbf{wait\_for\_completion}
+parameter set to \textbf{TRUE}. If an application calls \textbf{destroy}
+in a thread that is currently servicing an invocation, the
+BAD\_INV\_ORDER system exception will be raised with the OMG minor code
+3, since blocking would result in a deadlock.
+
+For maximum portability and to avoid resource leaks, an application
+should always call \textbf{shutdown} and \textbf{destroy} on all ORB
+instances before exiting.
+
+\subsection{8.3 Object Reference
+Operations}\label{object-reference-operations}
+
+There are some operations that can be done on any object. These are not
+operations in the normal sense, in that they are implemented directly by
+the ORB, not passed on to the object implementation. We will describe
+these as being operations on the object reference, although the
+interfaces actually depend on the language binding. As above, where we
+used interface \textbf{Object} to represent the object reference, we
+define an interface for \textbf{Object}:
+
+\begin{lstlisting}
+module CORBA {
+
+interface DomainManager;   // forward declaration
+typedef sequence    <DomainManager> DomainManagersList;
+
+interface Policy;     // forward declaration
+typedef sequence <Policy> PolicyList;
+typedef sequence<PolicyType> PolicyTypeSeq;
+exception InvalidPolicies { sequence <unsigned short> indices; };
+
+interface Context;     // forward declaration
+
+typedef string Identifier;
+interface Request;     // forward declaration
+interface NVList;     // forward declaration
+struct NamedValue{};    // an implicitly well known type
+typedef unsigned long Flags;
+interface InterfaceDef;
+
+enum SetOverrideType {SET_OVERRIDE, ADD_OVERRIDE};
+
+interface ORB;   // PIDL forward declaration
+
+interface Object {      // PIDL
+
+InterfaceDef get_interface ();
+
+boolean is_nil();
+
+Object duplicate ();
+
+void release ();
+
+boolean is_a (
+ in RepositoryId  logical_type_id
+);
+
+boolean non_existent();
+
+boolean is_equivalent (
+ in Object    other_object
+);
+
+unsigned long hash(
+ in unsigned long  maximum
+);
+
+void create_request (
+ in Context    ctx
+ in Identifier   operation,
+ in NVList    arg_list,
+ inout NamedValue  result,
+ out Request   req,
+ in Flags    req_flag
+);
+
+Policy get_policy (
+ in PolicyType   policy_type
+);
+
+DomainManagersList get_domain_managers ();
+
+Object set_policy_overrides(
+ in PolicyList   policies,
+ in SetOverrideType  set_add
+) raises (InvalidPolicies);
+
+Policy get_client_policy(
+ in PolicyType   type
+);
+
+PolicyList get_policy_overrides(
+in PolicyTypeSeq   types
+);
+
+boolean validate_connection(
+ out PolicyList   inconsistent_policies
+);
+
+Object get_component ();
+
+string respository_id();
+
+ORB get_orb();
+ };
+};
+\end{lstlisting}
+
+The \textbf{create\_request} operation is part of the Object interface
+because it creates a pseudo-object (a Request) for an object. It is
+described with the other Request operations in Request Operations.
+
+Unless otherwise stated below, the operations in the IDL above do not
+require access to remote information.
+
+\subsubsection{8.3.1 Determining the Object
+Interface}\label{determining-the-object-interface}
+
+\textbf{8.3.1.1 get\_interface}
+
+\passthrough{\lstinline!InterfaceDef get\_interface();!}
+
+\textbf{get\_interface}, returns an object in the Interface Repository
+that describes the most derived type of the object addressed by the
+reference. See the Interface Repository clause for a definition of
+operations on the Interface Repository. The implementation of this
+operation may involve contacting the ORB that implements the target
+object.
+
+If the interface repository is not available, \textbf{get\_interface}
+raises INTF\_REPOS with standard minor code 1. If the interface
+repository does not contain an entry for the object's (most derived)
+interface, \textbf{get\_interface} raises INTF\_REPOS with standard
+minor code 2.
+
+\textbf{8.3.1.2 repository\_id}
+
+\textbf{repository\_id} returns the repository ID of an object (see
+\hyperref[146-component-interface-repository-interfaces]{Component
+Interface Repository Interfaces} for details of repository IDs). The
+implementation of this operation must contact the ORB that implements
+the target object.
+
+\subsubsection{8.3.2 Duplicating and Releasing Copies of Object
+References}\label{duplicating-and-releasing-copies-of-object-references}
+
+\textbf{8.3.2.1 duplicate}
+
+\passthrough{\lstinline!Object duplicate();!}
+
+\textbf{8.3.2.2 release}
+
+\passthrough{\lstinline!void release();!}
+
+Because object references are opaque and ORB-dependent, it is not
+possible for clients or implementations to allocate storage for them.
+Therefore, there are operations defined to copy or release an object
+reference.
+
+If more than one copy of an object reference is needed, the client may
+create a \textbf{duplicate}. Note that the object implementation is not
+involved in creating the duplicate, and that the implementation cannot
+distinguish whether the original or a duplicate was used in a particular
+request.
+
+When an object reference is no longer needed by a program, its storage
+may be reclaimed by use of the \textbf{release} operation. Note that the
+object implementation is not involved, and that neither the object
+itself nor any other references to it are affected by the
+\textbf{release} operation.
+
+\subsubsection{8.3.3 Nil Object References}\label{nil-object-references}
+
+\textbf{8.3.3.1 is\_nil}
+
+\passthrough{\lstinline!boolean is\_nil();!}
+
+An object reference whose value is \textbf{OBJECT\_NIL} denotes no
+object. An object reference can be tested for this value by the
+\textbf{is\_nil} operation. The object implementation is not involved in
+the nil test.
+
+\subsubsection{8.3.4 Equivalence Checking
+Operation}\label{equivalence-checking-operation}
+
+\textbf{8.3.4.1 is\_a}
+
+\begin{lstlisting}
+boolean is_a( 
+ in RepositoryId    logical_type_id);
+\end{lstlisting}
+
+An operation is defined to facilitate maintaining type-safety for object
+references over the scope of an ORB.
+
+The \textbf{logical\_type\_id} is a string denoting a shared type
+identifier (\textbf{RepositoryId}). The operation returns true if the
+object is really an instance of that type, including if that type is an
+ancestor of the ``most derived'' type of that object.
+
+Determining whether an object's type is compatible with the
+\textbf{logical\_type\_id} may require contacting a remote ORB or
+interface repository. Such an attempt may fail at either the local or
+the remote end. If \textbf{is\_a} cannot make a reliable determination
+of type compatibility due to failure, it raises an exception in the
+calling application code. This enables the application to distinguish
+among the \textbf{TRUE}, \textbf{FALSE}, and indeterminate cases.
+
+This operation exposes to application programmers functionality that
+must already exist in ORBs that support ``type safe narrow'' and allows
+programmers working in environments that do not have compile time type
+checking to explicitly maintain type safety.
+
+This operation always returns \textbf{TRUE} for the
+\textbf{logical\_type\_id} \textbf{IDL:omg.org/CORBA/Object:1.0}
+
+\subsubsection{8.3.5 Probing for Object
+Non-Existence}\label{probing-for-object-non-existence}
+
+\textbf{8.3.5.1 non\_existent}
+
+\passthrough{\lstinline!boolean non\_existent ();!}
+
+The \textbf{non\_existent} operation may be used to test whether an
+object (e.g., a proxy object) has been destroyed. It does this without
+invoking any application level operation on the object, and so will
+never affect the object itself. It returns true (rather than raising
+\textbf{CORBA::OBJECT\_NOT\_EXIST}) if the ORB knows authoritatively
+that the object does not exist; otherwise, it returns false.
+
+Services that maintain state that includes object references, such as
+bridges, event channels, and base relationship services, might use this
+operation in their ``idle time'' to sift through object tables for
+objects that no longer exist, deleting them as they go, as a form of
+garbage collection. In the case of proxies, this kind of activity can
+cascade, such that cleaning up one table allows others then to be
+cleaned up.
+
+Probing for object non-existence may require contacting the ORB that
+implements the target object. Such an attempt may fail at either the
+local or the remote end. If non-existent cannot make a reliable
+determination of object existence due to failure, it raises an exception
+in the calling application code. This enables the application to
+distinguish among the true, false, and indeterminate cases.
+
+\subsubsection{8.3.6 Object Reference
+Identity}\label{object-reference-identity}
+
+In order to efficiently manage state that include large numbers of
+object references, services need to support a notion of object reference
+identity. Such services include not just bridges, but relationship
+services and other layered facilities.
+
+Two identity-related operations are provided. One maps object references
+into disjoint groups of potentially equivalent references, and the other
+supports more expensive pairwise equivalence testing. Together, these
+operations support efficient maintenance and search of tables keyed by
+object references.
+
+\textbf{8.3.6.1 Hashing Object Identifiers}
+
+\emph{hash}
+
+\begin{lstlisting}
+unsigned long hash(
+  in unsigned long    maximum
+);
+\end{lstlisting}
+
+Object references are associated with ORB-internal identifiers that may
+indirectly be accessed by applications using the \textbf{hash}
+operation. The value of this identifier does not change during the
+lifetime of the object reference, and so neither will any hash function
+of that identifier.
+
+The value of this operation is not guaranteed to be unique; that is,
+another object reference may return the same hash value. However, if two
+object references hash differently, applications can determine that the
+two object references are \emph{not} identical.
+
+The \textbf{maximum} parameter to the \textbf{hash} operation specifies
+an upper bound on the hash value returned by the ORB. The lower bound of
+that value is zero. Since a typical use of this feature is to construct
+and access a collision chained hash table of object references, the more
+randomly distributed the values are within that range, and the cheaper
+those values are to compute, the better.
+
+For bridge construction, note that proxy objects are themselves objects,
+so there could be many proxy objects representing a given ``real''
+object. Those proxies would not necessarily hash to the same value.
+
+\textbf{8.3.6.2 Equivalence Testing}
+
+\emph{is\_equivalent}
+
+\begin{lstlisting}
+boolean is_equivalent(
+ in Object    other_object
+);
+\end{lstlisting}
+
+The \textbf{is\_equivalent} operation is used to determine if two object
+references are equivalent, so far as the ORB can easily determine. It
+returns \textbf{TRUE} if the target object reference is known to be
+equivalent to the other object reference passed as its parameter, and
+\textbf{FALSE} otherwise.
+
+If two object references are identical, they are equivalent. Two
+different object references that in fact refer to the same object are
+also equivalent.
+
+ORBs are allowed, but not required, to attempt determination of whether
+two distinct object references refer to the same object. In general, the
+existence of reference translation and encapsulation, in the absence of
+an omniscient topology service, can make such determination
+impractically expensive. This means that a \textbf{FALSE} return from
+\textbf{is\_equivalent} should be viewed as only indicating that the
+object references are distinct, and not necessarily an indication that
+the references indicate distinct objects. Setting of local policies on
+the object reference is not taken into consideration for the purposes of
+determining object reference equivalence.
+
+A typical application use of this operation is to match object
+references in a hash table. Bridges could use it to shorten the lengths
+of chains of proxy object references. Externalization services could use
+it to ``flatten'' graphs that represent cyclical relationships between
+objects. Some might do this as they construct the table, others during
+idle time.
+
+\subsubsection{8.3.7 Type Coercion
+Considerations}\label{type-coercion-considerations}
+
+Many programming languages map \textbf{Object} to programming constructs
+that support inheritance. Mappings to languages (such as C++ and Java)
+typically provide a mechanism for narrowing (down-casting) an object
+reference from a base interface to a more derived interface. To do such
+down-casting in a type safe way, knowledge of the full inheritance
+hierarchy of the target interface may be required. The implementation of
+down-cast must either contact an interface repository or the target
+itself, to determine whether or not it is safe to down-cast the client's
+object reference. This requirement is not acceptable when a client is
+expecting only asynchronous communication with the target. Therefore,
+for the appropriate languages an unchecked down-cast operation (also
+referred to as unchecked narrow operation) shall be provided in the
+mapping of Object. This unchecked narrow always returns a stub of the
+requested type without checking that the target really implements that
+interface.
+
+\subsubsection{8.3.8 Getting Policy Associated with the
+Object}\label{getting-policy-associated-with-the-object}
+
+\textbf{8.3.8.1 get\_policy}
+
+The get\_policy operation returns the policy object of the specified
+type (see \hyperref[88-policy-object]{Policy Object}), which applies to
+this object. It returns the \emph{effective} \textbf{Policy} for the
+object reference. The effective \textbf{Policy} is the one that would be
+used if a request were made.
+
+This \textbf{Policy} is determined first by obtaining the effective
+override for the \textbf{PolicyType} as returned by
+\textbf{get\_client\_policy}. The effective override is then compared
+with the \textbf{Policy} as specified in the \textbf{IOR}. The effective
+\textbf{Policy} is determined by reconciling the effective override and
+the \textbf{IOR}-specified \textbf{Policy} (see
+\hyperref[892-server-side-policy-management]{Server Side Policy
+Management}. If the two policies cannot be reconciled, the standard
+system exception INV\_POLICY is raised with standard minor code 1. The
+absence of a \textbf{Policy} value in the \textbf{IOR} implies that any
+legal value may be used.
+
+Invoking \textbf{non\_existent} on an object reference prior to
+\textbf{get\_policy} ensures the accuracy of the returned effective
+\textbf{Policy}. If \textbf{get\_policy} is invoked prior to the object
+reference being bound, a compliant implementation shall attempt a
+binding and then return the effective \textbf{Policy}. If the binding
+attempt fails it shall pass through the system exception returned from
+the binding attempt. Note that if the effective \textbf{Policy} may
+change from invocation to invocation due to transparent rebinding.
+
+\begin{lstlisting}
+Policy get_policy (
+in PolicyType     policy_type
+);
+\end{lstlisting}
+
+\textbf{\emph{Parameter(s)}}
+
+\begin{itemize}
+
+\item
+  \textbf{policy\_type}
+\end{itemize}
+
+The type of policy to be obtained.
+
+\emph{Return Value}
+
+A \textbf{\emph{Policy}} object of the type specified by the
+\textbf{\emph{policy\_type}} parameter.
+
+\textbf{\emph{Exception(s)}}
+
+• \textbf{\emph{CORBA::INV\_POLICY}}
+
+Raised when the value of policy type is not valid either because the
+specified type is not supported by this ORB or because a policy object
+of that type is not associated with this Object.
+
+The implementation of this operation may involve remote invocation of an
+operation (e.g., \textbf{\emph{DomainManager::get\_domain\_policy}} for
+some security policies) for some policy types.
+
+\paragraph{8.3.8.2 get\_client\_policy}\label{get_client_policy}
+
+\begin{lstlisting}
+Policy get_client_policy(
+ in PolicyType type
+);
+\end{lstlisting}
+
+Returns the \textbf{\emph{effective overriding}} Policy for the object
+reference. The effective override is obtained by first checking for an
+override of the given PolicyType at the Object scope, then at the
+Current scope, and finally at the ORB scope. If no override is present
+for the requested PolicyType, a system-dependent default value for that
+Policy Type may be returned. A nil Policy reference may also be returned
+to indicate that there is no default for the policy. Portable
+applications are expected to set the desired ``defaults'' at the ORB
+scope since default Policy values are not specified.
+
+\paragraph{8.3.8.3 get\_policy\_overrides}\label{get_policy_overrides}
+
+\begin{lstlisting}
+PolicyList get_policy_overrides(
+in PolicyTypeSeq   types
+);
+\end{lstlisting}
+
+Returns the list of Policy overrides (of the specified policy types) set
+at the Object scope. If the specified sequence is empty, all Policy
+overrides at this scope will be returned. If none of the requested
+PolicyTypes are overridden at the Object scope, an empty sequence is
+returned.
+
+\subsubsection{8.3.9 Overriding Associated Policies on an Object
+Reference}\label{overriding-associated-policies-on-an-object-reference}
+
+\paragraph{8.3.9.1 set\_policy\_overrides}\label{set_policy_overrides}
+
+The \textbf{set\_policy\_overrides} operation returns a new object
+reference with the new policies associated with it. It takes two input
+parameters. The first parameter \textbf{policies} is a sequence of
+references to \textbf{Policy} objects. The second parameter
+\textbf{set\_add} of type \textbf{SetOverrideType} indicates whether
+these policies should be added onto any other overrides that already
+exist (\textbf{ADD\_OVERRIDE}) in the object reference, or they should
+be added to a clean override free object reference
+(\textbf{SET\_OVERRIDE}). This operation associates the policies passed
+in the first parameter with a newly created object reference that it
+returns. Only certain policies that pertain to the invocation of an
+operation at the client end can be overridden using this operation.
+Attempts to override any other policy will result in the raising of the
+CORBA::NO\_PERMISSION exception.
+
+\passthrough{\lstinline!enum SetOverrideType \{SET\_OVERRIDE, ADD\_OVERRIDE\};!}
+
+\begin{lstlisting}
+Object set_policy_overrides(
+ in PolicyList   policies,
+ in SetOverrideType  set_add
+) raises (InvalidPolicies);
+\end{lstlisting}
+
+\emph{Parameter(s)}
+
+\begin{itemize}
+\item
+  \textbf{policies}
+
+  A sequence of \textbf{Policy} objects that are to be associated with
+  the new copy of the object reference returned by this operation. If
+  the sequence contains two or more \textbf{Policy} objects with the
+  same \textbf{PolicyType} value, the operation raises the standard
+  system exception BAD\_PARAM with minor code 30.
+\item
+  \textbf{set\_add}
+
+  Whether the association is in addition to (\textbf{ADD\_OVERRIDE}) or
+  as a replacement of (\textbf{SET\_OVERRIDE}) any existing overrides
+  already associated with the object reference. If the value of this
+  parameter is \textbf{SET\_OVERRIDE}, the supplied \textbf{policies}
+  completely replace all existing overrides associated with the object
+  reference. If the value of this parameter is \textbf{ADD\_OVERRIDE},
+  the supplied \textbf{policies} are added to the existing overrides
+  associated with the object reference, except that if a supplied
+  \textbf{Policy} object has the same \textbf{PolicyType} value as an
+  existing override, the supplied \textbf{Policy} object replaces the
+  existing override.
+\end{itemize}
+
+\emph{Return Value}
+
+A copy of the object reference with the overrides from \textbf{policies}
+associated with it in accordance with the value of \textbf{set\_add}.
+
+\emph{Exception(s)}
+
+• InvalidPolicies
+
+Raised when an attempt is made to override any policy that cannot be
+overridden.
+
+\subsubsection{8.3.10 Validating
+Connection}\label{validating-connection}
+
+\textbf{8.3.10.1 validate\_connection}
+
+\begin{lstlisting}
+boolean validate_connection(
+out PolicyList   inconsistent_policies
+);
+\end{lstlisting}
+
+Returns the value TRUE if the current effective policies for the Object
+will allow an invocation to be made. If the object reference is not yet
+bound, a binding will occur as part of this operation. If the object
+reference is already bound, but current policy overrides have changed or
+for any other reason the binding is no longer valid, a rebind will be
+attempted regardless of the setting of any RebindPolicy override. The
+validate\_connection operation is the only way to force such a rebind
+when implicit rebinds are disallowed by the current effective
+RebindPolicy. The attempt to bind or rebind may involve processing GIOP
+LocateRequests by the ORB.
+
+If the RoutingPolicy \textbf{ROUTE\_FORWARD} or
+\textbf{ROUTE\_STORE\_AND\_FORWARD} are in effect when
+\textbf{validate\_connection} is invoked then the client ORB shall
+attempt to open a connection for the first hop to the first target
+\textbf{Router} (applies to both \textbf{Router} and
+\textbf{PersistentRequestRouter}) as if it were the target
+\textbf{Object} and return success or failure based on success or
+failure to establish this connection.
+
+Returns the value FALSE if the current effective policies would cause an
+invocation to raise the standard system exception INV\_POLICY. If the
+current effective policies are incompatible, the out parameter
+inconsistent\_policies contains those policies causing the
+incompatibility. This returned list of policies is not guaranteed to be
+exhaustive. If the binding fails due to some reason unrelated to policy
+overrides, the appropriate standard system exception is raised.
+
+\subsubsection{8.3.11 Getting the Domain Managers Associated with the
+Object}\label{getting-the-domain-managers-associated-with-the-object}
+
+\textbf{8.3.11.1 get\_domain\_managers}
+
+\textbf{The get\_domain\_managers} operation allows administration
+services (and applications) to retrieve the domain managers (see
+\hyperref[89-management-of-policies]{Management of Policies}), and hence
+the security and other policies applicable to individual objects that
+are members of the domain.
+
+\begin{lstlisting}
+typedef sequence <DomainManager> DomainManagersList;
+
+DomainManagersList get_domain_managers ();
+\end{lstlisting}
+
+\emph{Return Value}
+
+The list of immediately enclosing domain managers of this object. At
+least one domain manager is always returned in the list since by default
+each object is associated with at least one domain manager at creation.
+
+The implementation of this operation may involve contacting the ORB that
+implements the target object.
+
+\subsubsection{8.3.12 Getting Component Associated with the
+Object}\label{getting-component-associated-with-the-object}
+
+\textbf{8.3.12.1 get\_component}
+
+\passthrough{\lstinline!Object get\_component ();!}
+
+If the target object reference is itself a component reference (i.e., it
+denotes the component itself), the \textbf{get\_component} operation
+returns the same reference (or another equivalent reference). If the
+target object reference is a facet reference the \textbf{get\_component}
+operation returns an object reference for the component. If the target
+reference is neither a component reference nor a provided reference,
+\textbf{get\_component} returns a nil reference.
+
+\subsubsection{8.3.13 Getting the ORB}\label{getting-the-orb}
+
+\textbf{8.3.13.1 get\_orb}
+
+\passthrough{\lstinline!ORB get\_orb();!}
+
+This operation returns the local ORB that is handling this particular
+Object Reference.
+
+\subsubsection{8.3.14 LocalObject
+Operations}\label{localobject-operations}
+
+Local interfaces are implemented by using \textbf{CORBA::LocalObject},
+which derives from \textbf{CORBA::Object} and provides implementations
+of Object pseudo operations and any other ORB specific support
+mechanisms that are appropriate for such objects. Object implementation
+techniques are inherently language mapping specific. Therefore, the
+\textbf{LocalObject} type is not defined in IDL, but is specified by
+each language mapping.
+
+\begin{itemize}
+
+\item
+  The \textbf{LocalObject} type provides implementations of the
+  following \textbf{Object} pseudo-operations that raise the
+  NO\_IMPLEMENT system exception with standard minor code 8:
+\item
+  \textbf{get\_interface}
+\item
+  \textbf{get\_domain\_managers}
+\item
+  \textbf{get\_policy}
+\item
+  \textbf{get\_client\_policy}
+\item
+  \textbf{set\_policy\_overrides}
+\item
+  \textbf{get\_policy\_overrides}
+\item
+  \textbf{validate\_connection}
+\item
+  \textbf{get\_component}
+\item
+  \textbf{respository\_id}
+\item
+  The \textbf{LocalObject} type provides implementations of the
+  following pseudo-operations:
+\item
+  \textbf{non\_existent} - always returns false.
+\item
+  \textbf{hash} - returns a hash value that is consistent for the
+  lifetime of the object.
+\item
+  \textbf{is\_equivalent} - returns true if the references refer to the
+  same LocalObject implementation.
+\item
+  \textbf{is\_a} - returns \textbf{TRUE} if the \textbf{LocalObject}
+  derives from or is itself the type specified by the
+  \textbf{logical\_type\_id} argument.
+\item
+  \textbf{get\_orb} - The default behavior of this operation when
+  invoked on a reference to a local object is to return the system
+  exception NO\_IMPLEMENT with standard minor code 8. Certain local
+  objects that have close association with an ORB, like POAs, Current
+  objects and certain portable interceptors related local objects
+  override the default behavior and return a reference to the ORB that
+  they are associated with. These are documented in the sub clauses
+  where these local objects are specified
+\item
+  Attempting to use a \textbf{LocalObject} to create a DII request shall
+  result in a NO\_IMPLEMENT system exception with standard minor code 4.
+  Attempting to marshal or stringify a LocalObject shall result in a
+  MARSHAL system exception with standard minor code 4. Narrowing and
+  widening of references to \textbf{LocalObject}s must work as for
+  regular object references.
+\item
+  Local types cannot be marshaled and references to local objects cannot
+  be converted to strings. Any attempt to marshal a local object, such
+  as via an unconstrained base interface, as an \textbf{Object}, or as
+  the contents of an \textbf{any}, or to pass a local object to
+  \textbf{ORB::object\_to\_string}, shall result in a MARSHAL system
+  exception with OMG minor code 4.
+\item
+  The DII is not supported on local objects, nor are asynchronous
+  invocation interfaces.
+\item
+  Language mappings shall specify server side mechanisms, including base
+  classes and/or skeletons if necessary, for implementing local objects,
+  so that invocation overhead is minimized.
+\item
+  The usage of client side language mappings for local types shall be
+  identical to those of equivalent unconstrained types.
+\item
+  Invocations on local objects are not ORB mediated. Specifically,
+  parameter copy semantics are not honored, interceptors are not
+  invoked, and the execution context of a local object does not have ORB
+  service \textbf{Current} object contexts that are distinct from those
+  of the caller. Implementations of local interfaces are responsible for
+  providing the parameter copy semantics expected by clients.
+\item
+  Local objects have no inherent identities beyond their
+  implementations' identities as programming objects. The lifecycle of
+  the implementation is the same as the lifecycle of the reference.
+\item
+  Instances of local objects defined as part of OMG specifications to be
+  supplied by ORB products or object service products shall be exposed
+  through the \textbf{ORB::resolve\_initial\_references} operation or
+  through some other local object obtained from
+  \textbf{resolve\_initial\_references}.
+\end{itemize}
+
+\subsection{8.4 ValueBase Operations}\label{valuebase-operations}
+
+\textbf{ValueBase} serves a similar role for value types that
+\textbf{Object} serves for interfaces. Its mapping is language-specific
+and must be explicitly specified for each language.
+
+Typically it is mapped to a concrete language type which serves as a
+base for all value types. Any operations that are required to be
+supported for all values are conceptually defined on \textbf{ValueBase},
+although in reality their actual mapping depends upon the specifics of
+any particular language mapping.
+
+Analogous to the definition of the \textbf{Object} interface for
+implicit operations of object references, the implicit operations of
+\textbf{ValueBase} are defined on a pseudo-\textbf{valuetype} as
+follows:
+
+\begin{lstlisting}
+module CORBA {
+ valuetype ValueBase{    PIDL
+  ValueDef get_value_def();
+ };
+};
+\end{lstlisting}
+
+The \textbf{get\_value\_def()} operation returns a description of the
+value's definition as described in the interface repository (see
+\hyperref[14531-valuedef]{ValueDef}).
+
+\subsection{8.5 ORB and OA Initialization and Initial
+References}\label{orb-and-oa-initialization-and-initial-references}
+
+Before an application can enter the CORBA environment, it must first:
+
+\begin{itemize}
+\item
+  Be initialized into the ORB and possibly the object adapter (POA)
+  environments.
+\item
+  Get references to ORB pseudo-object (for use in future ORB operations)
+  and perhaps other objects (including the root POA or some Object
+  Adapter objects).
+
+  The following operations are provided to initialize applications and
+  obtain the appropriate object references:
+\item
+  Operations providing access to the ORB. These operations reside in the
+  CORBA module, but not in the ORB interface and are described in
+  \hyperref[851-orb-initialization]{ORB Initialization}.
+\item
+  Operations providing access to Object Adapters, Interface Repository,
+  Naming Service, and other Object Services. These operations reside in
+  the ORB interface and are described in
+  \hyperref[852-obtaining-initial-object-references]{Obtaining Initial
+  Object References}.
+\end{itemize}
+
+\subsubsection{8.5.1 ORB Initialization}\label{orb-initialization}
+
+When an application requires a CORBA environment it needs a mechanism to
+get the ORB pseudo-object reference and possibly an OA object reference
+(such as the root POA). This serves two purposes. First, it initializes
+an application into the ORB and OA environments. Second, it returns the
+ORB pseudo-object reference and the OA object reference to the
+application for use in future ORB and OA operations.
+
+The ORB and OA initialization operations must be ordered with ORB
+occurring before OA: an application cannot call OA initialization
+routines until ORB initialization routines have been called for the
+given ORB. The operation to initialize an application in the ORB and get
+its pseudo-object reference is not performed on an object. This is
+because applications do not initially have an object on which to invoke
+operations. The ORB initialization operation is an application's
+bootstrap call into the CORBA world. The \textbf{ORB\_init} call is part
+of the CORBA module but not part of the ORB interface.
+
+Applications can be initialized in one or more ORBs. When an ORB
+initialization is complete, its pseudo reference is returned and can be
+used to obtain other references for that ORB.
+
+In order to obtain an \textbf{ORB} pseudo-object reference, applications
+call the \textbf{ORB\_init} operation. The parameters to the call
+comprise an identifier for the ORB for which the pseudo-object reference
+is required, and an \textbf{arg\_list}, which is used to allow
+environment-specific data to be passed into the call. PIDL for the ORB
+initialization is as follows:
+
+\begin{lstlisting}
+// PIDL
+module CORBA {
+ typedef sequence <string> arg_list;
+ ORB ORB_init (inout arg_list argv, in ORBid orb_identifier);
+};
+\end{lstlisting}
+
+The identifier for the ORB will be a name of type \textbf{CORBA::ORBid}.
+All \textbf{ORBid} strings other than the empty string are allocated by
+ORB administrators and are not managed by the OMG. ORB administration is
+the responsibility of each ORB supplier. ORB suppliers may optionally
+delegate this responsibility. \textbf{ORBid} strings other than the
+empty string are intended to be used to uniquely identify each ORB used
+within the same address space in a multi-ORB application. These special
+\textbf{ORBid} strings are specific to each ORB implementation and the
+ORB administrator is responsible for ensuring that the names are
+unambiguous.
+
+If an empty \textbf{ORBid} string is passed to \textbf{ORB\_init}, then
+the \textbf{arg\_list} arguments shall be examined to determine if they
+indicate an ORB reference that should be returned. This is achieved by
+searching the \textbf{arg\_list} parameters for one preceded by
+``\textbf{-ORBid}'' for example, ``\textbf{-ORBid example\_orb}'' (the
+white space after the ``\textbf{-ORBid}'' tag is ignored) or
+``\textbf{ORBidMyFavoriteORB}'' (with no white space following the
+``\textbf{-ORBid}'' tag). Alternatively, two sequential parameters with
+the first being the string ``\textbf{-ORBid}'' indicates that the second
+is to be treated as an \textbf{ORBid} parameter. If an empty string is
+passed and no \textbf{arg\_list} parameters indicate the ORB reference
+to be returned, the default ORB for the environment will be returned.
+
+Other parameters of significance to the ORB can also be identified in
+\textbf{arg\_list}, for example, ``\textbf{Hostname},''
+``\textbf{SpawnedServer},'' and so forth. To allow for other parameters
+to be specified without causing applications to be rewritten, it is
+necessary to specify the parameter format that ORB parameters may take.
+In general, parameters shall be formatted as either one single
+\textbf{arg\_list} parameter:
+
+\passthrough{\lstinline!-ORB<suffix><optional white space> <value>!}
+
+or as two sequential \textbf{arg\_list} parameters:
+
+\begin{lstlisting}
+-ORB<suffix>
+<value>`
+\end{lstlisting}
+
+Regardless of whether an empty or non-empty \textbf{ORBid} string is
+passed to \textbf{ORB\_init}, the \textbf{arg\_list} arguments are
+examined to determine if any ORB parameters are given. If a non-empty
+\textbf{ORBid} string is passed to \textbf{ORB\_init}, all
+\textbf{ORBid} parameters in the \textbf{arg\_list} are ignored. All
+other \passthrough{\lstinline!-ORB<suffix>!} parameters in the
+\textbf{arg\_list} may be of significance during the ORB initialization
+process.
+
+Before \textbf{ORB\_init} returns, it will remove from the
+\textbf{arg\_list} parameter all strings that match the
+\passthrough{\lstinline!-ORB<suffix>!} pattern described above and that
+are recognized by that ORB implementation, along with any associated
+sequential parameter strings. If any strings in \textbf{arg\_list} that
+match this pattern are not recognized by the ORB implementation,
+\textbf{ORB\_init} will raise the BAD\_PARAM system exception instead.
+
+The \textbf{ORB\_init} operation may be called any number of times and
+shall return the same ORB reference when the same \textbf{ORBid} string
+is passed, either explicitly as an argument to \textbf{ORB\_init} or
+through the \textbf{arg\_list}. All other
+\passthrough{\lstinline!-ORB<suffix>!} parameters in the
+\textbf{arg\_list} may be considered on subsequent calls to
+\textbf{ORB\_init}.
+
+\textbf{NOTE:} Whenever an \textbf{ORB\_init} argument of the form
+\textbf{-ORBxxx} is specified, it is understood that the argument may be
+represented in different ways in different languages. For example, in
+Java \textbf{-ORBxxx} is equivalent to a property named
+\textbf{org.omg.CORBA.ORBxxx}.
+
+\textbf{8.5.1.1 Server ID}
+
+A Server ID must uniquely identify a server to an IMR. This
+specification only requires unique identification using a string of some
+kind. We do not intend to make more specific requirements for the
+structure of a server ID.
+
+The server ID may be specified by an \textbf{ORB\_init} argument of the
+form
+
+\passthrough{\lstinline!-ORBServerId!}
+
+The value assigned to this property is a \textbf{string}. All templates
+created in this \textbf{ORB} will return this server ID in the
+\textbf{server\_id} attribute.
+
+It is required that all ORBs in the same server share the same server
+ID. Specific environments may choose to implement \textbf{-ORBServerId}
+in ways that automatically enforce this requirement.
+
+For example, the \textbf{org.omg.CORBA.ServerId} system property may be
+set to the server ID in Java when a Java server is activated. This
+system property is then picked up as part of the \textbf{ORB\_init} call
+for every \textbf{ORB} created in the server.
+
+\textbf{8.5.1.2 Server Endpoint}
+
+The server endpoint information is passed into \textbf{ORB\_init} by an
+argument of the form
+
+\passthrough{\lstinline!-ORBListenEndpoints <endpoints>!}
+
+The format of the \passthrough{\lstinline!<endpoints>!} argument is
+proprietary. All that is required by this specification is that each
+time \textbf{ORB\_init} is called with the same value for this argument,
+the resulting \textbf{ORB} will listen for requests on the same set of
+endpoints, so that persistent object references for the \textbf{ORB}
+will continue to function correctly.
+
+\textbf{8.5.1.3 Starting Servers with No Proprietary Server Activation
+Support} Any server started with the flag:
+
+\passthrough{\lstinline!-ORBNoProprietaryActivation!}
+
+shall avoid the use of any proprietary activation framework.
+
+\subsubsection{8.5.2 Obtaining Initial Object
+References}\label{obtaining-initial-object-references}
+
+Applications require a portable means by which to obtain their initial
+object references. References are required for the root POA, POA
+Current, Interface Repository and various Object Services instances.
+(The POA is described in the Portable Object Adapter clause; the
+Interface Repository is described in the Interface Repository clause;
+Object Services are described in the individual service specifications.)
+The functionality required by the application is similar to that
+provided by the Naming Service. However, the OMG does not want to
+mandate that the Naming Service be made available to all applications in
+order that they may be portably initialized. Consequently, the
+operations shown in this sub clause provide a simplified, local version
+of the Naming Service that applications can use to obtain a small,
+defined set of object references that are essential to its operation.
+Because only a small well-defined set of objects are expected with this
+mechanism, the naming context can be flattened to be a single-level name
+space. This simplification results in only two operations being defined
+to achieve the functionality required.
+
+Initial references are not obtained via a new interface; instead two
+operations are provided in the ORB pseudo-object interface, providing
+facilities to list and resolve initial object references.
+
+\emph{list\_initial\_services}
+
+\begin{lstlisting}
+typedef string ObjectId;
+typedef sequence <ObjectId> ObjectIdList;
+ObjectIdList list_initial_services ();
+\end{lstlisting}
+
+\emph{resolve\_initial\_references}
+
+\begin{lstlisting}
+exception InvalidName {};
+
+Object resolve_initial_references (
+ in ObjectId identifier
+) raises (InvalidName);
+\end{lstlisting}
+
+The \textbf{resolve\_initial\_references} operation is an operation on
+the ORB rather than the Naming Service's
+
+\textbf{NamingContext}. The interface differs from the Naming Service's
+resolve in that \textbf{ObjectId} (a string) replaces the more complex
+Naming Service construct (a sequence of structures containing string
+pairs for the components of the name). This simplification reduces the
+name space to one context.
+
+\textbf{ObjectIds} are strings that identify the object whose reference
+is required. To maintain the simplicity of the interface for obtaining
+initial references, only a limited set of objects are expected to have
+their references found via this route. Unlike the ORB identifiers, the
+\textbf{ObjectId} name space requires careful management. To achieve
+this, the OMG may, in the future, define which services are required by
+applications through this interface and specify names for those
+services.
+
+\textbf{resolve\_initial\_references} never returns a \textbf{nil}
+reference. Instead, the non-availability of a particular reference is
+indicated by throwing an \textbf{InvalidName} exception (even if a
+\textbf{nil} reference is explicitly configured for an
+\textbf{ObjectId}).
+
+Currently, reserved \textbf{ObjectIds} are \textbf{RootPOA},
+\textbf{POACurrent}, \textbf{InterfaceRepository, NameService},
+\textbf{TradingService}, \textbf{SecurityCurrent},
+\textbf{TransactionCurrent, DynAnyFactory, ORBPolicyManager,
+PolicyCurrent,} \textbf{NotificationService, TypedNotificationService,
+CodecFactory, PICurrent, ComponentHomeFinder} and \textbf{PSS}.
+\textbf{Table 8.1- ObjectIds for resolve\_initial\_references}
+

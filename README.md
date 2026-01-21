@@ -1,6 +1,143 @@
 # OMG MDSA - SPECIFICATION
 The OMG's Model Driven Specification Authoring process is a new technique for creating OMG specifications. There are three main parts: Document creation, collaboration, and model generated content. The latter two are optional, but strongly suggested.
 
+## CORBA specification authoring environment on Windows
+
+### MSYS2 environment
+
+The LaTeX authoring environment currently used to build the CORBA specification
+on a Windows platform is based on MSYS2: https://www.msys2.org/
+
+After installing the base MSYS2 environment packages, install the following TeXLive packages:
+```
+pacman -S \
+  mingw-w64-ucrt-x86_64-texlive-bibtex-extra \
+  mingw-w64-ucrt-x86_64-texlive-bin \
+  mingw-w64-ucrt-x86_64-texlive-core \
+  mingw-w64-ucrt-x86_64-texlive-font-utils \
+  mingw-w64-ucrt-x86_64-texlive-fonts-recommended \
+  mingw-w64-ucrt-x86_64-texlive-latex-extra \
+  mingw-w64-ucrt-x86_64-texlive-latex-recommended \
+  mingw-w64-ucrt-x86_64-texlive-pictures \
+  mingw-w64-ucrt-x86_64-texlive-plain-generic
+```
+
+In order to import SVG images in the LaTeX, you will need inkscape:
+```
+pacman -S \
+  mingw-w64-ucrt-x86_64-inkscape
+```
+
+The OMG LaTeX production tool requires PIP and make:
+```
+pacman -S \
+  mingw-w64-ucrt-x86_64-python-pip \
+  make
+```
+
+
+### Enable pdflatex shell-escape
+
+Create a latexmkrc file with the following contents:
+```
+$pdflatex = 'pdflatex --shell-escape';
+```
+
+
+### Pandoc
+
+The MarkDown to LaTeX conversion step requires Pandoc: https://pandoc.org/
+Grab the latest Windows installer and install it.
+Don't forget to add Pandoc to your PATH, i.e.:
+```
+export PATH=$PATH:/c/Users/mvescovi/AppData/Local/PanDoc
+```
+
+
+## MSDA OMG core tweaks
+
+The current version of OMG MDSA core requires a couple of changes to work in the MSYS2 LaTeX authoring environment:
+
+```
+$ cd mdsa-omg-core/ && git diff
+diff --git a/_core.mk b/_core.mk
+index 1956769..22daad9 100644
+--- a/_core.mk
++++ b/_core.mk
+@@ -105,4 +105,4 @@ ${build}/%.yaml: ./%.yaml
+ # SVG is the only format formally accepted by OMG for documents
+ ${build}/Images/%.svg: ./Images/%.svg
+        echo $<
+-       cp $< $0
++       cp $< $@
+diff --git a/omgLaTeX.yaml b/omgLaTeX.yaml
+index 7000d6d..5a37cae 100644
+--- a/omgLaTeX.yaml
++++ b/omgLaTeX.yaml
+@@ -1,3 +1,4 @@
++from: gfm
+ to: latex
+ table-caption-position: below
+ figure-caption-position: below
+diff --git a/omg_specification.sty b/omg_specification.sty
+index 3e51a50..365284a 100644
+--- a/omg_specification.sty
++++ b/omg_specification.sty
+@@ -154,7 +154,7 @@
+ \renewcommand\appendixname{Annex}
+
+ %%% Bibliographies
+-\usepackage[style=alphabetic]{biblatex}
++\usepackage[style=alphabetic,backend=bibtex]{biblatex}
+ \usepackage[utf8]{inputenc}
+ \usepackage{csquotes}
+ \DeclareBibliographyCategory{normative}
+
+```
+
+
+# FrameMaker to MarkDown conversion
+
+The CORBA specification source format has been FrameMaker since its inception.
+
+## Tools Used in the content conversion
+
+Writage: Microsoft Word plugin that copies formatted text and outputs into MarkDown.
+
+The conversion process required pretty extensive manual cleanup and formatting work.
+
+The bulk of this work was done manually to ensure that the source document and the newly outputted MarkDown PDF document were similar.
+
+
+## Validation of migrated content
+
+The writing team that worked on this project validated the documents and the text against the previous editions.
+
+This validation included the following:
+- Formatting of the PDF files
+- Validation of PDF files
+- Text validation using the tool Beyond Compare
+
+Extracted all text from the Original and Markdown generated PDF and ran a text diff.
+- Spot checks when necessary
+
+
+## Conversion of images and diagrams to scalable vector graphics
+
+Images were initially extracted from the PDFs in PNG/JPG format by taking a snip (snapshot) of the rendered PDFs.
+
+The Object Management Group (OMG) and other standardization bodies that consume the CORBA specification (such as the International Organization for Standardization (ISO) require the graphics to be in scalable vector format in the specification sources and targets.
+
+They cannot be raster graphics (PNG, JPG) because no matter the resolution of the graphics, they’ll look grainy when you zoom in close enough. On the contrary, vector graphics can be scaled up as much as one wants, with no degradation, since they contain drawing instructions rather than RGB values for each of the pixels in the image.
+
+To convert the graphic diagrams in the CORBA 3.4 spec to SVG, the following steps were manually carried out for each diagram:
+- open the original CORBA 3.4 PDF document in the open-source vector graphics editing tool Inkscape
+- select and copy (after ungrouping as necessary) the elements constituting the diagram from the rest of the document
+- paste the diagram elements into a new SVG file
+- editing the MarkDown sources to refer to the newly created SVG file rather than the previous PNG/JPG file
+
+
+
 ## tl;dr
  -- _*DO NOT CLONE THIS REPOSITORY*_ --
 
@@ -75,7 +212,7 @@ If you open this NOTSET_NOTSET.PDF, you will notice that much of the body is red
 The first thing to do is set up your metadata.
 
 ### Setting up your specification
-The first task towards a working specification is to edit the `_Specification_Setup.tex` file. This file contains the metadata for your specification that will be used to fill in much of the red text you see in the freshly built PDF. Most of this should be self-explanatory even if you are not familiar with LaTeX, and is fully documented within that file. Lines beginning with `%` are comments, and most of this file is simply setting values to be used in the build process. As an example, the first three items you will need to edit are:
+The first task towards a working specification is to edit the `_Specification_Setup.tex` file. This file contains the metadata for your specificaiton that will be used to fill in much of the red text you see in the freshly built PDF. Most of this should be self-explanatory even if you are not familiar with LaTeX, and is fully documented within that file. Lines beginning with `%` are comments, and most of this file is simply setting values to be used in the build process. As an example, the first three items you will need to edit are:
 
 ``` LaTeX
 \setvalue{\specname}{\REPLACEME{Test Spec}}
@@ -135,17 +272,10 @@ Each remaining file is self-documented, and contains instructions on how it shou
 - `A_Annexes`           Annexes A onward, fill this in if you have supplementary annexes.
 
 #### Bibliography
-Note that there *is no section 3 Bibliography*.  LaTeX creates a bibliography for you, automatically, based on what sources you cite from the `.bib` files, and ensures it is formatted according to OMG requirements.
+Note that there *is no section 3 Bibliography*.  LaTeX creates a bibliography for you, automatically, based on what sources you cite from the .bib files, and ensures it is formatted according to OMG requirements.
 
-Citations are created with `\cite{bibkey}` where `bibkey` is the abbreviation for the reference used in the `.bib` file. Several `.bib` files are provided for you in `mdsa-omg-core` including ones for OMG and W3 specifications, and common ISO standards. Refer to these for the needed bibkey.
 
-By default, citations are NON-normative. To make a citation normative, add its bibkey to the provided list in `_Specification_AuthorSettings.tex`, such as:
-
-`\addtocategory{normative}{MOF25, MOF251, UML251, XMI, XMLSchema}`
-
-(Make sure to uncomment that line to activate it.)
-
-`specification.bib` is your team's private bibliography file, add your non-OMG, non-ISO, non-W3 references here.  For help with creating .bib entries, you can refer to any number of online resources, but we recommend starting with the biblatex documentation at: https://www.overleaf.com/learn/latex/Bibliography_management_in_LaTeX .
+`specification.bib` is your team's bibliography file, add your non-OMG, non-ISO, non-W3 references here.  For help with creating .bib entries, you can refer to any number of online resources, but we recommend starting with the biblatex documentation at: https://www.overleaf.com/learn/latex/Bibliography_management_in_LaTeX .
 
 #### Additional Files
 While this template structure is designed to handle most use cases possible, there is always that one team that breaks things and... I mean innovates. They innovate.
