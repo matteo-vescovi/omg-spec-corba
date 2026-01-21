@@ -1,5 +1,6 @@
-# OMG MDSA - SPECIFICATION
-The OMG's Model Driven Specification Authoring process is a new technique for creating OMG specifications. There are three main parts: Document creation, collaboration, and model generated content. The latter two are optional, but strongly suggested.
+# OMG CORBA SPECIFICATION
+
+LaTeX / MarkDown sources
 
 ## CORBA specification authoring environment on Windows
 
@@ -138,6 +139,9 @@ To convert the graphic diagrams in the CORBA 3.4 spec to SVG, the following step
 
 
 Following text is from the https://github.com/ObjectManagementGroup/mdsa-omg-spec repo README.md:
+
+# OMG MDSA - SPECIFICATION
+The OMG's Model Driven Specification Authoring process is a new technique for creating OMG specifications. There are three main parts: Document creation, collaboration, and model generated content. The latter two are optional, but strongly suggested.
 
 ## tl;dr
  -- _*DO NOT CLONE THIS REPOSITORY*_ --
